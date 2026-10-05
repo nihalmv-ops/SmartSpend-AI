@@ -1,7 +1,7 @@
 import React from 'react';
-import { Search, Bell, Menu, WalletCards } from 'lucide-react';
+import { Search, Bell, Menu, WalletCards, Plus } from 'lucide-react';
 
-export default function Header({ onMenuClick }) {
+export default function Header({ onMenuClick, onOpenAddModal }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-xs sm:px-6 lg:px-8">
       {/* Left Section: Mobile Menu + Mobile Brand / Desktop Search */}
@@ -41,8 +41,21 @@ export default function Header({ onMenuClick }) {
         </div>
       </div>
 
-      {/* Right Section: Notification & User Profile */}
+      {/* Right Section: Quick Add, Notification & User Profile */}
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Quick Add Action Button (Desktop/Tablet) */}
+        {onOpenAddModal && (
+          <button
+            type="button"
+            onClick={onOpenAddModal}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+            aria-label="Quick add transaction"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Quick Add</span>
+          </button>
+        )}
+
         {/* Notification Button */}
         <button
           type="button"

@@ -8,45 +8,32 @@ import {
   BarChart3,
   Calendar,
 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 import BudgetCard from '../components/BudgetCard';
 import RecentTransactions from '../components/RecentTransactions';
 
-export default function Dashboard() {
+export default function Dashboard({ onOpenAddModal }) {
   const [timeframe, setTimeframe] = useState('Monthly');
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Dashboard Top Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <span className="text-[11px] font-bold tracking-wider text-indigo-600 uppercase">
-            Financial Overview
-          </span>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Good morning 👋
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Here's your financial overview for this month.
-          </p>
-        </div>
-
-        {/* Add Transaction Button */}
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              // Day 1 placeholder notification
-              alert('Add Transaction feature is scheduled for Day 2!');
-            }}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition-all hover:bg-indigo-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-            aria-label="Add new transaction"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Transaction</span>
-          </button>
-        </div>
-      </div>
+      {/* Dashboard Page Header */}
+      <PageHeader
+        label="Financial Overview"
+        title="Good morning 👋"
+        subtitle="Here's your financial overview for this month."
+      >
+        <button
+          type="button"
+          onClick={onOpenAddModal}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition-all hover:bg-indigo-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+          aria-label="Add new transaction"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Transaction</span>
+        </button>
+      </PageHeader>
 
       {/* 4 Summary Cards Grid */}
       <section
@@ -111,7 +98,7 @@ export default function Dashboard() {
                   id="timeframe-select"
                   value={timeframe}
                   onChange={(e) => setTimeframe(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-8 pl-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-8 pl-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 >
                   <option value="Monthly">Monthly</option>
                   <option value="Yearly">Yearly</option>

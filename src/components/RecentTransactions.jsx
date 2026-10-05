@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownLeft, ChevronRight } from 'lucide-react';
 
 const SAMPLE_TRANSACTIONS = [
@@ -40,14 +41,14 @@ export default function RecentTransactions({ transactions = SAMPLE_TRANSACTIONS 
           <h2 className="text-base font-bold text-slate-900">Recent Transactions</h2>
           <p className="text-xs text-slate-400 mt-0.5">Your latest income and expenses</p>
         </div>
-        <button
-          type="button"
+        <Link
+          to="/transactions"
           className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg px-2 py-1"
           aria-label="View all transactions"
         >
           <span>View all</span>
           <ChevronRight className="h-3.5 w-3.5" />
-        </button>
+        </Link>
       </div>
 
       {/* Transaction List */}

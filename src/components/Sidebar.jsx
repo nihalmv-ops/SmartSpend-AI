@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -12,15 +13,21 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '#', active: true },
-  { id: 'transactions', name: 'Transactions', icon: ArrowLeftRight, href: '#', active: false },
-  { id: 'analytics', name: 'Analytics', icon: BarChart3, href: '#', active: false },
-  { id: 'budget', name: 'Budget', icon: Target, href: '#', active: false },
-  { id: 'reports', name: 'Reports', icon: FileText, href: '#', active: false },
-  { id: 'settings', name: 'Settings', icon: Settings, href: '#', active: false },
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/', end: true },
+  { id: 'transactions', name: 'Transactions', icon: ArrowLeftRight, path: '/transactions' },
+  { id: 'analytics', name: 'Analytics', icon: BarChart3, path: '/analytics' },
+  { id: 'budget', name: 'Budget', icon: Target, path: '/budget' },
+  { id: 'reports', name: 'Reports', icon: FileText, path: '/reports' },
+  { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
 ];
 
 export default function Sidebar({ isOpen = false, onClose }) {
+  const handleNavClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -42,7 +49,11 @@ export default function Sidebar({ isOpen = false, onClose }) {
         <div className="flex flex-col gap-6">
           {/* Brand Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <NavLink
+              to="/"
+              onClick={handleNavClick}
+              className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-xl"
+            >
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200">
                 <WalletCards className="h-5 w-5" />
               </div>
@@ -57,7 +68,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                 </div>
                 <p className="text-xs font-medium text-slate-400">AI Finance</p>
               </div>
-            </div>
+            </NavLink>
 
             {/* Mobile Close Button */}
             <button
@@ -78,28 +89,35 @@ export default function Sidebar({ isOpen = false, onClose }) {
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
-                <button
+                <NavLink
                   key={item.id}
-                  type="button"
-                  aria-current={item.active ? 'page' : undefined}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                    item.active
-                      ? 'bg-indigo-50/80 text-indigo-700 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  to={item.path}
+                  end={item.end}
+                  onClick={handleNavClick}
+                  className={({ isActive }) =>
+                    `group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                      isActive
+                        ? 'bg-indigo-50/80 text-indigo-700 shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`
+                  }
                 >
-                  <Icon
-                    className={`h-4 w-4 transition-colors ${
-                      item.active
-                        ? 'text-indigo-600'
-                        : 'text-slate-400 group-hover:text-slate-600'
-                    }`}
-                  />
-                  <span>{item.name}</span>
-                  {item.active && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600" />
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        className={`h-4 w-4 transition-colors ${
+                          isActive
+                            ? 'text-indigo-600'
+                            : 'text-slate-400 group-hover:text-slate-600'
+                        }`}
+                      />
+                      <span>{item.name}</span>
+                      {isActive && (
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600" />
+                      )}
+                    </>
                   )}
-                </button>
+                </NavLink>
               );
             })}
           </nav>
