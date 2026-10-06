@@ -12,19 +12,11 @@ import {
   getTransactions,
   saveTransactions,
   normalizeTransaction,
+  getBudget,
+  saveBudget,
 } from './utils/storage';
 
-/**
- * App Root Component
- * 
- * Demonstrates core React concepts:
- * 1. useState: holds application state for transactions, modal, and mobile drawer.
- *    Using useState(() => getTransactions()) loads stored items once on initial mount.
- * 2. useEffect with [transactions]: runs whenever transactions change to persist data into LocalStorage.
- * 3. Props: passes data down to pages and receives user actions via callbacks.
- * 4. Immutable state updates: using setTransactions((prev) => [...prev, newTx])
- *    and setTransactions((prev) => prev.filter(...)) instead of directly mutating state arrays.
- */
+
 export default function App() {
   // Mobile sidebar drawer open/closed state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,9 +28,12 @@ export default function App() {
   // We use a function inside useState so getTransactions() runs once on initial mount.
   const [transactions, setTransactions] = useState(() => getTransactions());
 
-  // ========================================================
+  // Store monthly target budget in React state, initialized from LocalStorage
+  const [budget, setBudget] = useState(() => getBudget());
+
+
   // LOCALSTORAGE PERSISTENCE LIFECYCLE
-  // ========================================================
+
 
   // Save transactions to LocalStorage whenever the transaction state changes.
   // The [transactions] dependency array tells React to run this effect
@@ -46,6 +41,11 @@ export default function App() {
   useEffect(() => {
     saveTransactions(transactions);
   }, [transactions]);
+
+  // Save budget to LocalStorage whenever the budget state changes.
+  useEffect(() => {
+    saveBudget(budget);
+  }, [budget]);
 
   // Keyboard accessibility: dismiss mobile sidebar if Escape key is pressed
   useEffect(() => {
@@ -62,13 +62,7 @@ export default function App() {
   // TRANSACTION ACTION HANDLERS
   // ========================================================
 
-  /**
-   * Add a new transaction to state.
-   * Add the new transaction to the existing transaction array.
-   * We create a new array instead of directly modifying the old state.
-   *
-   * @param {Object} newTransaction - Transaction object from form
-   */
+ 
   const handleAddTransaction = (newTransaction) => {
     const normalized = normalizeTransaction(newTransaction);
     if (normalized) {
@@ -86,6 +80,18 @@ export default function App() {
     setTransactions((prev) =>
       prev.filter((transaction) => transaction && transaction.id !== id)
     );
+  };
+
+  /**
+   * Update the monthly target budget.
+   *
+   * @param {number|string} newBudget - Target budget amount in Rupees
+   */
+  const handleUpdateBudget = (newBudget) => {
+    const num = Number(newBudget);
+    if (!isNaN(num) && num > 0) {
+      setBudget(num);
+    }
   };
 
   return (
@@ -115,6 +121,7 @@ export default function App() {
                 element={
                   <Dashboard
                     transactions={transactions}
+                    budget={budget}
                     onOpenAddModal={() => setIsModalOpen(true)}
                   />
                 }
@@ -132,22 +139,39 @@ export default function App() {
                 }
               />
 
-              {/* Analytics: KPI metrics & category spending */}
+              {/* Analytics: Recharts spending visualizations & KPI metrics */}
               <Route
                 path="/analytics"
-                element={<Analytics transactions={transactions} />}
+                element={
+                  <Analytics
+                    transactions={transactions}
+                    budget={budget}
+                    onOpenAddModal={() => setIsModalOpen(true)}
+                  />
+                }
               />
 
               {/* Budget: Spending limits dynamically calculated against expenses */}
               <Route
                 path="/budget"
-                element={<Budget transactions={transactions} />}
+                element={
+                  <Budget
+                    transactions={transactions}
+                    budget={budget}
+                    onUpdateBudget={handleUpdateBudget}
+                  />
+                }
               />
 
               {/* Reports: Financial statements & export UI with dynamic summary */}
               <Route
                 path="/reports"
-                element={<Reports transactions={transactions} />}
+                element={
+                  <Reports
+                    transactions={transactions}
+                    budget={budget}
+                  />
+                }
               />
 
               {/* Settings placeholder route */}

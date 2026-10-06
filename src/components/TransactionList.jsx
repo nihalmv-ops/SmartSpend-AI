@@ -7,10 +7,11 @@ import {
   SearchX,
   Plus,
 } from 'lucide-react';
+import { formatDisplayDate } from '../utils/storage';
 
 /**
  * Helper to safely format amounts with Indian locale formatting (₹)
- * Handles numbers, strings, and undefined/null values defensively to prevent any runtime errors.
+ * Handles numbers, strings, and undefined/null values defensively to prevent runtime errors.
  */
 const formatAmount = (amount) => {
   const num =
@@ -127,6 +128,7 @@ export default function TransactionList({
               const description =
                 transaction.description || transaction.title || 'Untitled Transaction';
               const formattedAmt = formatAmount(transaction.amount);
+              const displayDate = formatDisplayDate(transaction.date);
 
               return (
                 <tr
@@ -154,7 +156,7 @@ export default function TransactionList({
 
                   {/* Formatted Date */}
                   <td className="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">
-                    {transaction.date || 'Today'}
+                    {displayDate}
                   </td>
 
                   {/* Transaction Type badge */}
@@ -214,6 +216,7 @@ export default function TransactionList({
           const description =
             transaction.description || transaction.title || 'Untitled Transaction';
           const formattedAmt = formatAmount(transaction.amount);
+          const displayDate = formatDisplayDate(transaction.date);
 
           return (
             <div
@@ -227,7 +230,7 @@ export default function TransactionList({
                     {description}
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                    <span>{transaction.date || 'Today'}</span>
+                    <span>{displayDate}</span>
                     <span>•</span>
                     <span className="font-medium text-slate-600">
                       {transaction.category || 'Other'}

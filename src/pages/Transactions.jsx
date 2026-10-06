@@ -11,6 +11,7 @@ import { CATEGORIES } from '../data/categories';
  * - useState: manages state for search query, type filter, and category filter.
  * - Controlled inputs: input and select elements bound to state via value and onChange.
  * - Array.prototype.filter(): creates a new filtered array immutably without altering the original array.
+ * - Array.prototype.sort(): sorts transactions chronologically (newest first).
  * - Props: receives transactions and callback handlers from parent App component.
  *
  * @param {Array} transactions - Full list of transaction objects from parent App state
@@ -56,6 +57,14 @@ export default function Transactions({
 
     // Return true only if all 3 filter criteria are met
     return matchesSearch && matchesType && matchesCategory;
+  });
+
+  // Sort filtered transactions chronologically (newest first)
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    if (a.rawDate && b.rawDate) {
+      return new Date(b.rawDate) - new Date(a.rawDate);
+    }
+    return (b.id || 0) - (a.id || 0);
   });
 
   return (
@@ -171,7 +180,7 @@ export default function Transactions({
       {/* Transaction List Container */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
         <TransactionList
-          transactions={filteredTransactions}
+          transactions={sortedTransactions}
           totalCount={(transactions || []).length}
           onDelete={onDeleteTransaction}
           onOpenAddModal={onOpenAddModal}

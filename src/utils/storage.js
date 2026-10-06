@@ -14,12 +14,13 @@
  *   so the code safely runs in both browser and server/test environments without crashing.
  */
 
-// Storage key used in browser localStorage
-const STORAGE_KEY = 'smartspend_transactions';
+// Storage keys used in browser localStorage
+const STORAGE_KEY_TRANSACTIONS = 'smartspend_transactions';
+const STORAGE_KEY_BUDGET = 'smartspend_budget';
 
 export const STORAGE_KEYS = {
-  TRANSACTIONS: STORAGE_KEY,
-  BUDGET: 'smartspend_budget',
+  TRANSACTIONS: STORAGE_KEY_TRANSACTIONS,
+  BUDGET: STORAGE_KEY_BUDGET,
   SETTINGS: 'smartspend_settings',
 };
 
@@ -62,6 +63,9 @@ export const DEFAULT_TRANSACTIONS = [
     notes: 'Fiber broadband recharge',
   },
 ];
+
+// Default monthly target budget in Indian Rupees (₹)
+export const DEFAULT_BUDGET = 30000;
 
 /**
  * Normalizes a transaction object ensuring all fields exist and are safe.
@@ -111,7 +115,7 @@ export const saveTransactions = (transactions) => {
     const sanitized = (transactions || [])
       .map(normalizeTransaction)
       .filter(Boolean);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(sanitized));
   } catch (error) {
     console.error('Error saving transactions to LocalStorage:', error);
   }
@@ -130,7 +134,7 @@ export const getTransactions = () => {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
       return DEFAULT_TRANSACTIONS;
     }
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
     // If user already has stored data in LocalStorage, parse it safely
     if (data !== null) {
       const parsed = JSON.parse(data);
@@ -144,6 +148,94 @@ export const getTransactions = () => {
   } catch (error) {
     console.error('Error loading transactions from LocalStorage:', error);
     return DEFAULT_TRANSACTIONS;
+  }
+};
+
+/**
+ * Retrieve monthly target budget from LocalStorage.
+ *
+ * @param {number} fallback - Default fallback budget (defaults to 30,000)
+ * @returns {number} Saved target budget
+ */
+export const getBudget = (fallback = DEFAULT_BUDGET) => {
+  try {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return fallback;
+    }
+    const data = localStorage.getItem(STORAGE_KEY_BUDGET);
+    if (data !== null) {
+      const parsed = JSON.parse(data);
+      const num = Number(parsed);
+      if (!isNaN(num) && num > 0) {
+        return num;
+      }
+    }
+    return fallback;
+  } catch (error) {
+    console.warn('Error reading budget from LocalStorage:', error);
+    return fallback;
+  }
+};
+
+/**
+ * Save monthly target budget to LocalStorage.
+ *
+ * @param {number|string} amount - Budget amount in Rupees
+ */
+export const saveBudget = (amount) => {
+  try {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+    const num = Number(amount);
+    if (!isNaN(num) && num > 0) {
+      localStorage.setItem(STORAGE_KEY_BUDGET, JSON.stringify(num));
+    }
+  } catch (error) {
+    console.error('Error saving budget to LocalStorage:', error);
+  }
+};
+
+/**
+ * Formats standard date strings into user-friendly presentation.
+ * Example: '2026-10-06' -> '06 Oct 2026'
+ * Respects relative strings like 'Today' and 'Yesterday'.
+ *
+ * @param {string} dateStr - Raw date string
+ * @returns {string} Formatted display date
+ */
+export const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return 'Today';
+  if (dateStr === 'Today' || dateStr === 'Yesterday') return dateStr;
+
+  try {
+    // If format is YYYY-MM-DD
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+      }
+    }
+
+    const parsedDate = new Date(dateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+    return dateStr;
+  } catch {
+    return dateStr;
   }
 };
 

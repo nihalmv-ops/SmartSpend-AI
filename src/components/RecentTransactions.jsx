@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownLeft, ChevronRight, Inbox, Plus } from 'lucide-react';
+import { formatDisplayDate } from '../utils/storage';
 
 const formatAmount = (amount) => {
   const num =
@@ -13,15 +14,25 @@ const formatAmount = (amount) => {
 /**
  * RecentTransactions Component
  * 
- * Displays the 5 latest income and expense entries on the main dashboard.
- * Normalizes transaction fields to ensure compatibility between standard Day 3 objects,
- * user-created entries, and legacy sample objects.
+ * Demonstrates:
+ * - Array.prototype.sort(): Orders transactions chronologically (latest first).
+ * - Array.prototype.slice(0, 5): Limits display to the top 5 most recent transactions.
+ * - Defensive formatting: Normalizes titles, categories, emojis, and currency.
  *
  * @param {Array} transactions - Active transactions from App state
  * @param {Function} [onOpenAddModal] - Callback to open Add Transaction modal
  */
 export default function RecentTransactions({ transactions = [], onOpenAddModal }) {
-  const displayItems = (transactions || []).slice(0, 5);
+  // Sort copy of transactions by ID / date descending so newest appears first
+  const sortedTransactions = [...(transactions || [])].sort((a, b) => {
+    // If raw date or id is available, use for ordering
+    if (a.rawDate && b.rawDate) {
+      return new Date(b.rawDate) - new Date(a.rawDate);
+    }
+    return (b.id || 0) - (a.id || 0);
+  });
+
+  const displayItems = sortedTransactions.slice(0, 5);
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
@@ -71,11 +82,11 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
             if (!tx) return null;
             const isIncome = tx.type === 'income';
             const title = tx.description || tx.title || 'Untitled Transaction';
-            const date = tx.date || 'Today';
+            const date = formatDisplayDate(tx.date);
             const category = tx.category || 'General';
-            const subtitle = tx.subtitle || `${date} · ${category}`;
+            const subtitle = `${date} · ${category}`;
             const emoji =
-              tx.emoji || tx.iconEmoji || (isIncome ? '💰' : '💳');
+              tx.emoji || tx.iconEmoji || (isIncome ? '💼' : '💳');
             const badgeBg =
               tx.badgeBg ||
               (isIncome

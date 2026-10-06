@@ -8,63 +8,130 @@ import {
   BarChart3,
   Calendar,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 import BudgetCard from '../components/BudgetCard';
 import RecentTransactions from '../components/RecentTransactions';
+import SpendingInsights from '../components/SpendingInsights';
+
+/**
+ * Custom Tooltip for Dashboard Spending Overview Chart
+ */
+const CustomOverviewTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const value = Number(payload[0].value || 0).toLocaleString('en-IN');
+    return (
+      <div className="rounded-xl border border-slate-100 bg-white/95 p-3 shadow-md backdrop-blur-xs">
+        <p className="text-xs font-semibold text-slate-700">{label}</p>
+        <p className="mt-1 text-sm font-bold text-indigo-600">₹{value}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 /**
  * Dashboard Page Component
  * 
  * Demonstrates:
- * - Array.prototype.filter(): extracts income or expense subsets from transactions.
- * - Array.prototype.reduce(): aggregates numbers into a single running total.
- * - Dynamic data flow: passing calculated numbers down to reusable child cards.
- * - Number.prototype.toLocaleString('en-IN'): formats numbers into the Indian Rupee system (e.g. ₹40,000).
+ * - Array.prototype.filter() & reduce(): dynamically computes income, expenses, and balance.
+ * - Dynamic data flow: passes live calculated metrics to SummaryCard and BudgetCard.
+ * - Responsive Recharts BarChart: visualizes real weekly spending patterns.
+ * - SpendingInsights integration: displays smart rule-based guidance on the overview screen.
  *
  * @param {Array} transactions - Active transactions array from App state
+ * @param {number} budget - Monthly budget from App state
  * @param {Function} onOpenAddModal - Callback to trigger the Add Transaction modal
  */
-export default function Dashboard({ transactions = [], onOpenAddModal }) {
+export default function Dashboard({
+  transactions = [],
+  budget = 30000,
+  onOpenAddModal,
+}) {
   const [timeframe, setTimeframe] = useState('Monthly');
 
   // ========================================================
   // DYNAMIC FINANCIAL CALCULATIONS
   // ========================================================
 
-  // Calculate total income using Array.prototype.reduce()
-  // reduce() starts with initial sum of 0 and adds each income transaction's amount.
+  // 1. Calculate total income using reduce()
   const totalIncome = (transactions || [])
     .filter((tx) => tx && tx.type === 'income')
-    .reduce((sum, tx) => {
-      const amt =
-        typeof tx.amount === 'number'
-          ? isNaN(tx.amount) ? 0 : tx.amount
-          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
-      return sum + amt;
-    }, 0);
+    .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  // Calculate total expenses using Array.prototype.reduce()
-  const totalExpenses = (transactions || [])
-    .filter((tx) => tx && tx.type === 'expense')
-    .reduce((sum, tx) => {
-      const amt =
-        typeof tx.amount === 'number'
-          ? isNaN(tx.amount) ? 0 : tx.amount
-          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
-      return sum + amt;
-    }, 0);
+  // 2. Calculate total expenses using reduce()
+  const expenseTransactions = (transactions || []).filter(
+    (tx) => tx && tx.type === 'expense'
+  );
 
-  // Current balance = Total Income - Total Expenses
+  const totalExpenses = expenseTransactions.reduce(
+    (sum, tx) => sum + (Number(tx.amount) || 0),
+    0
+  );
+
+  // 3. Current balance = Total Income - Total Expenses
   const currentBalance = totalIncome - totalExpenses;
 
-  // Monthly budget benchmark
-  const monthlyBudget = 30000;
-  const remainingBudget = Math.max(0, monthlyBudget - totalExpenses);
-  const budgetPercentage = Math.min(
-    100,
-    Math.round((totalExpenses / monthlyBudget) * 100)
+  // 4. Budget calculations
+  const budgetNum = Number(budget) || 30000;
+  const remainingBudget = budgetNum - totalExpenses;
+  const isOverBudget = remainingBudget < 0;
+  const budgetPercentage =
+    budgetNum > 0 ? Math.round((totalExpenses / budgetNum) * 100) : 0;
+
+  // Savings rate calculation
+  const savingsRate =
+    totalIncome > 0
+      ? Math.max(0, ((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1)
+      : '0.0';
+
+  // Category breakdown for insights
+  const categoryTotals = expenseTransactions.reduce((acc, tx) => {
+    const cat = tx.category || 'Other';
+    acc[cat] = (acc[cat] || 0) + (Number(tx.amount) || 0);
+    return acc;
+  }, {});
+
+  const categoryEntries = Object.entries(categoryTotals).sort(
+    (a, b) => b[1] - a[1]
   );
+  const topCategory = categoryEntries.length > 0 ? categoryEntries[0][0] : 'None';
+  const topCategoryAmount = categoryEntries.length > 0 ? categoryEntries[0][1] : 0;
+
+  // Prepare weekly chart distribution
+  const chartData = [
+    { name: 'Week 1', spending: 0 },
+    { name: 'Week 2', spending: 0 },
+    { name: 'Week 3', spending: 0 },
+    { name: 'Week 4', spending: 0 },
+  ];
+
+  expenseTransactions.forEach((tx) => {
+    const amt = Number(tx.amount) || 0;
+    let day = 1;
+    if (tx.rawDate) {
+      day = new Date(tx.rawDate).getDate() || 1;
+    } else if (typeof tx.date === 'string' && tx.date.includes('-')) {
+      const parts = tx.date.split('-');
+      day = parseInt(parts[2], 10) || 1;
+    } else {
+      day = (tx.id % 28) + 1;
+    }
+
+    if (day <= 7) chartData[0].spending += amt;
+    else if (day <= 14) chartData[1].spending += amt;
+    else if (day <= 21) chartData[2].spending += amt;
+    else chartData[3].spending += amt;
+  });
 
   return (
     <div className="space-y-6 pb-12">
@@ -72,7 +139,7 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
       <PageHeader
         label="Financial Overview"
         title="Good morning 👋"
-        subtitle="Here's your live financial overview."
+        subtitle="Here's your live financial overview for this month."
       >
         <button
           type="button"
@@ -105,7 +172,7 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
           subtitle={
             totalIncome > 0
               ? `${Math.round((totalExpenses / totalIncome) * 100)}% of total income`
-              : 'Outflow recorded'
+              : 'Outflows recorded'
           }
         />
         <SummaryCard
@@ -113,18 +180,18 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
           value={`₹${currentBalance.toLocaleString('en-IN')}`}
           icon={Wallet}
           variant="indigo"
-          subtitle={currentBalance >= 0 ? 'Healthy net savings' : 'Budget deficit'}
+          subtitle={currentBalance >= 0 ? 'Positive net savings' : 'Budget deficit'}
         />
         <SummaryCard
           title="Monthly Budget"
-          value={`₹${monthlyBudget.toLocaleString('en-IN')}`}
+          value={`₹${budgetNum.toLocaleString('en-IN')}`}
           icon={Target}
           variant="purple"
           subtitle={`${budgetPercentage}% used this month`}
         />
       </section>
 
-      {/* Main Insights Grid: Spending Overview (Chart Placeholder) + Budget Card */}
+      {/* Main Insights Grid: Spending Overview (Recharts Chart) + Budget Card */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Spending Overview Panel (Spans 2 columns on desktop) */}
         <section
@@ -138,7 +205,7 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
                 Spending Overview
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Your spending activity this month
+                Weekly spending activity this month
               </p>
             </div>
 
@@ -164,48 +231,51 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
             </div>
           </div>
 
-          {/* Chart Placeholder Area (Scheduled for Day 4 Recharts implementation) */}
-          <div className="relative mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-            {/* Visual silhouette background mimicking a chart */}
-            <div
-              className="absolute inset-x-6 bottom-8 flex h-32 items-end justify-between gap-3 opacity-25 pointer-events-none"
-              aria-hidden="true"
-            >
-              <div className="w-full h-[40%] rounded-t bg-indigo-300" />
-              <div className="w-full h-[65%] rounded-t bg-indigo-400" />
-              <div className="w-full h-[50%] rounded-t bg-indigo-300" />
-              <div className="w-full h-[85%] rounded-t bg-indigo-500" />
-              <div className="w-full h-[60%] rounded-t bg-indigo-400" />
-              <div className="w-full h-[75%] rounded-t bg-indigo-500" />
-              <div className="w-full h-[45%] rounded-t bg-indigo-300" />
-            </div>
-
-            {/* Placeholder info box */}
-            <div className="relative z-10 flex flex-col items-center max-w-sm rounded-xl bg-white/95 p-5 shadow-xs border border-slate-100">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-3 shadow-2xs">
-                <BarChart3 className="h-6 w-6" />
+          {/* Recharts Spending BarChart Area */}
+          <div className="mt-6 h-[260px] w-full">
+            {expenseTransactions.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-2">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <h3 className="text-xs font-bold text-slate-700">
+                  No spending recorded yet
+                </h3>
+                <p className="mt-1 text-[11px] text-slate-400 max-w-xs">
+                  Add expense transactions to see your weekly distribution chart.
+                </p>
               </div>
-              <h3 className="text-sm font-semibold text-slate-800">
-                Interactive Chart Area
-              </h3>
-              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                Reserved for Recharts spending analytics and breakdown charts coming in future days.
-              </p>
-              <span className="mt-3 inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-700">
-                Recharts Analytics
-              </span>
-            </div>
-
-            {/* Timeline axis labels */}
-            <div
-              className="absolute inset-x-6 bottom-2 flex justify-between text-[10px] font-medium text-slate-400"
-              aria-hidden="true"
-            >
-              <span>Week 1</span>
-              <span>Week 2</span>
-              <span>Week 3</span>
-              <span>Week 4</span>
-            </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickFormatter={(val) => `₹${val}`}
+                  />
+                  <Tooltip content={<CustomOverviewTooltip />} />
+                  <Bar
+                    dataKey="spending"
+                    name="Spending"
+                    fill="#6366f1"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </section>
 
@@ -213,12 +283,29 @@ export default function Dashboard({ transactions = [], onOpenAddModal }) {
         <section aria-label="Monthly Budget Progress">
           <BudgetCard
             spent={`₹${totalExpenses.toLocaleString('en-IN')}`}
-            total={`₹${monthlyBudget.toLocaleString('en-IN')}`}
-            remaining={`₹${remainingBudget.toLocaleString('en-IN')}`}
+            total={`₹${budgetNum.toLocaleString('en-IN')}`}
+            remaining={
+              isOverBudget
+                ? `Over by ₹${Math.abs(remainingBudget).toLocaleString('en-IN')}`
+                : `₹${remainingBudget.toLocaleString('en-IN')}`
+            }
             percentage={budgetPercentage}
+            isOverBudget={isOverBudget}
           />
         </section>
       </div>
+
+      {/* Automated Spending Insights Section */}
+      <section aria-label="Smart Insights">
+        <SpendingInsights
+          totalExpenses={totalExpenses}
+          totalIncome={totalIncome}
+          budget={budgetNum}
+          savingsRate={savingsRate}
+          topCategory={topCategory}
+          topCategoryAmount={topCategoryAmount}
+        />
+      </section>
 
       {/* Dynamic Recent Transactions List */}
       <section aria-label="Recent Transactions List">
