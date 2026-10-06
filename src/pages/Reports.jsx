@@ -11,9 +11,24 @@ import {
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
-export default function Reports() {
+export default function Reports({ transactions = [] }) {
   const [period, setPeriod] = useState('Monthly');
   const [exportNotice, setExportNotice] = useState(null);
+
+  // Dynamic calculations from transactions
+  const totalIncome = transactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const netSavings = totalIncome - totalExpenses;
+  const savingsRate =
+    totalIncome > 0
+      ? ((netSavings / totalIncome) * 100).toFixed(1)
+      : '0.0';
 
   const handleExport = (type) => {
     setExportNotice(`${type} export feature will be fully activated in subsequent releases!`);
@@ -112,24 +127,24 @@ export default function Reports() {
       >
         <SummaryCard
           title="Income"
-          value="₹45,000"
+          value={`₹${totalIncome.toLocaleString('en-IN')}`}
           icon={TrendingUp}
           variant="emerald"
           subtitle="Total verified cash inflow"
         />
         <SummaryCard
           title="Expenses"
-          value="₹18,500"
+          value={`₹${totalExpenses.toLocaleString('en-IN')}`}
           icon={TrendingDown}
           variant="rose"
           subtitle="Total recorded expenses"
         />
         <SummaryCard
           title="Savings"
-          value="₹26,500"
+          value={`₹${netSavings.toLocaleString('en-IN')}`}
           icon={PiggyBank}
           variant="indigo"
-          subtitle="Net retained surplus (58.9%)"
+          subtitle={`Net retained surplus (${savingsRate}%)`}
         />
       </section>
 

@@ -10,8 +10,41 @@ import {
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
-export default function Analytics() {
+export default function Analytics({ transactions = [] }) {
   const [period, setPeriod] = useState('Monthly');
+
+  // Dynamic calculations from transactions
+  const totalIncome = transactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const averageDaily = Math.round(totalExpenses / 30);
+
+  // Determine top expense category
+  const categoryTotals = {};
+  transactions
+    .filter((t) => t.type === 'expense')
+    .forEach((t) => {
+      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+    });
+
+  let topCategory = 'None';
+  let topAmount = 0;
+  Object.entries(categoryTotals).forEach(([cat, amt]) => {
+    if (amt > topAmount) {
+      topAmount = amt;
+      topCategory = cat;
+    }
+  });
+
+  const savingsRate =
+    totalIncome > 0
+      ? (((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1)
+      : '0.0';
 
   return (
     <div className="space-y-6 pb-12">
@@ -59,28 +92,28 @@ export default function Analytics() {
       >
         <SummaryCard
           title="Total Spending"
-          value="₹18,500"
+          value={`₹${totalExpenses.toLocaleString('en-IN')}`}
           icon={TrendingDown}
           variant="rose"
           subtitle="Total outflows recorded"
         />
         <SummaryCard
           title="Average Daily"
-          value="₹616"
+          value={`₹${averageDaily.toLocaleString('en-IN')}`}
           icon={Calendar}
           variant="indigo"
           subtitle="Based on 30-day tracking"
         />
         <SummaryCard
           title="Top Category"
-          value="Food"
+          value={topCategory}
           icon={Utensils}
           variant="purple"
-          subtitle="42% of total expenses"
+          subtitle={topAmount > 0 ? `₹${topAmount.toLocaleString('en-IN')} spent` : 'No expenses yet'}
         />
         <SummaryCard
           title="Savings Rate"
-          value="58.9%"
+          value={`${savingsRate}%`}
           icon={Percent}
           variant="emerald"
           subtitle="Above recommended 20%"

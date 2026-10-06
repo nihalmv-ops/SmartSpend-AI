@@ -1,20 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { X, PlusCircle, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { X, PlusCircle, ArrowDownLeft, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { CATEGORIES } from '../data/categories';
 
+/**
+ * Helper to get the current date in YYYY-MM-DD format.
+ * Kept outside component so render remains pure.
+ */
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
+/**
+ * TransactionModal Component
+ * 
+ * Demonstrates:
+ * - Controlled inputs (React state controls the input value)
+ * - Form validation (checking required fields and amount > 0)
+ * - onSubmit & preventDefault() (preventing browser page refresh)
+ * - Accessibility (role="dialog", aria-modal, keyboard focus)
+ *
+ * @param {boolean} isOpen - Whether modal is visible
+ * @param {Function} onClose - Closes the modal
+ * @param {Function} onAddTransaction - Callback invoked with new transaction object
+ */
 export default function TransactionModal({ isOpen, onClose, onAddTransaction }) {
-  const [formData, setFormData] = useState(() => ({
-    type: 'expense',
-    description: '',
-    amount: '',
-    category: 'Food',
-    date: getTodayDate(),
-    notes: '',
-  }));
+  // Controlled input states:
+  // Each form field is tied directly to a React useState hook.
+  const [type, setType] = useState('expense'); // 'income' or 'expense'
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('Food');
+  const [date, setDate] = useState(getTodayDate);
+  const [notes, setNotes] = useState('');
 
-  // Reset form or handle Escape key
+  // State to hold user-friendly validation error messages
+  const [error, setError] = useState('');
+
+  // Keyboard accessibility: Close modal when Escape key is pressed
   useEffect(() => {
     if (!isOpen) return;
 
@@ -28,34 +48,69 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Helper to reset form inputs and errors
+  const resetForm = () => {
+    setType('expense');
+    setDescription('');
+    setAmount('');
+    setCategory('Food');
+    setDate(getTodayDate());
+    setNotes('');
+    setError('');
+  };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  // Form submission handler
   const handleSubmit = (e) => {
+    // Prevent the browser from refreshing the page when the form is submitted.
     e.preventDefault();
-    if (!formData.description.trim() || !formData.amount) {
-      alert('Please enter both a description and amount.');
+
+    // Frontend validation: check description
+    if (!description.trim()) {
+      setError('Please enter a description for this transaction.');
       return;
     }
 
-    if (onAddTransaction) {
-      onAddTransaction({
-        ...formData,
-        id: Date.now(),
-        amount: Number(formData.amount),
-      });
+    // Frontend validation: check amount is a positive number
+    const numericAmount = Number(amount);
+    if (!amount || isNaN(numericAmount) || numericAmount <= 0) {
+      setError('Please enter a valid amount greater than ₹0.');
+      return;
     }
 
-    // Reset and close
-    setFormData({
-      type: 'expense',
-      description: '',
-      amount: '',
-      category: 'Food',
-      date: getTodayDate(),
-      notes: '',
-    });
-    onClose();
+    // Frontend validation: check date
+    if (!date) {
+      setError('Please select a transaction date.');
+      return;
+    }
+
+    // Create a new transaction object from the controlled form values.
+    // Date.now() creates a simple unique number ID based on the timestamp.
+    const newTransaction = {
+      id: Date.now(),
+      type,
+      description: description.trim(),
+      amount: numericAmount,
+      category,
+      date,
+      notes: notes.trim(),
+    };
+
+    // Pass the new transaction to the parent component
+    if (onAddTransaction) {
+      onAddTransaction(newTransaction);
+    }
+
+    // Reset the form and close the modal dialog
+    handleClose();
   };
+
+  // Do not render anything if the modal is closed
+  if (!isOpen) return null;
 
   return (
     <div
@@ -64,14 +119,14 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
       aria-modal="true"
       aria-labelledby="transaction-modal-title"
     >
-      {/* Backdrop */}
+      {/* Semi-transparent backdrop: clicking outside closes the modal */}
       <div
         className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
-      {/* Modal Dialog Window */}
+      {/* Modal Dialog Box */}
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/10 z-10 animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
@@ -88,7 +143,7 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Close modal"
           >
@@ -98,17 +153,31 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Transaction Type Segment Switch */}
+          {/* User-friendly validation error banner */}
+          {error && (
+            <div
+              role="alert"
+              className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700 animate-in fade-in"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Transaction Type Segment Switch: Expense vs Income */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
               Transaction Type
-            </label>
+            </span>
             <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, type: 'expense' })}
+                onClick={() => {
+                  setType('expense');
+                  setError('');
+                }}
                 className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  formData.type === 'expense'
+                  type === 'expense'
                     ? 'bg-white text-rose-600 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -119,9 +188,12 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
 
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, type: 'income' })}
+                onClick={() => {
+                  setType('income');
+                  setError('');
+                }}
                 className={`flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  formData.type === 'income'
+                  type === 'income'
                     ? 'bg-white text-emerald-600 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -132,7 +204,7 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description: Controlled input */}
           <div>
             <label
               htmlFor="tx-description"
@@ -140,22 +212,23 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
             >
               Description <span className="text-rose-500">*</span>
             </label>
+            {/* This is a controlled input. React state controls the current value of the input. */}
             <input
               id="tx-description"
               type="text"
-              required
-              placeholder="e.g. Restaurant, Monthly Salary, Groceries"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              placeholder="e.g., Salary, Restaurant, Fuel, Internet Bill"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (error) setError('');
+              }}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
           {/* Amount & Category */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Amount */}
+            {/* Amount input */}
             <div>
               <label
                 htmlFor="tx-amount"
@@ -167,23 +240,24 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-semibold text-sm">
                   ₹
                 </span>
+                {/* This is a controlled input for the numeric amount */}
                 <input
                   id="tx-amount"
                   type="number"
-                  required
                   min="1"
                   step="any"
                   placeholder="0.00"
-                  value={formData.amount}
-                  onChange={(e) =>
-                    setFormData({ ...formData, amount: e.target.value })
-                  }
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if (error) setError('');
+                  }}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8 pr-3.5 py-2 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
             </div>
 
-            {/* Category Dropdown */}
+            {/* Category selection */}
             <div>
               <label
                 htmlFor="tx-category"
@@ -191,12 +265,11 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
               >
                 Category
               </label>
+              {/* Controlled select dropdown mapped from categories.js */}
               <select
                 id="tx-category"
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 {CATEGORIES.map((cat) => (
@@ -208,26 +281,24 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
             </div>
           </div>
 
-          {/* Date */}
+          {/* Date Picker */}
           <div>
             <label
               htmlFor="tx-date"
               className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5"
             >
-              Date
+              Date <span className="text-rose-500">*</span>
             </label>
             <input
               id="tx-date"
               type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
-          {/* Notes */}
+          {/* Notes (Optional) */}
           <div>
             <label
               htmlFor="tx-notes"
@@ -238,21 +309,19 @@ export default function TransactionModal({ isOpen, onClose, onAddTransaction }) 
             <textarea
               id="tx-notes"
               rows={2}
-              placeholder="Add payment method, invoice number, or memo..."
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
+              placeholder="Add payment method or memo..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
             />
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons: Cancel and Add Transaction */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onClick={handleClose}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
               Cancel
             </button>

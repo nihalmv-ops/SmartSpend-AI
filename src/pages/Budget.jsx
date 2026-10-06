@@ -3,10 +3,17 @@ import { Target, CheckCircle2, AlertCircle, Save, Sparkles } from 'lucide-react'
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
-export default function Budget() {
+export default function Budget({ transactions = [] }) {
   const [budgetAmount, setBudgetAmount] = useState('30000');
-  const [spentAmount] = useState(18500);
   const [savedNotification, setSavedNotification] = useState(false);
+
+  // Dynamically calculate spent amount from actual expense transactions
+  const calculatedSpent = transactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // If transactions exist use calculatedSpent, otherwise fallback to 18500
+  const spentAmount = transactions.length > 0 ? calculatedSpent : 18500;
 
   const budgetNum = Number(budgetAmount) || 30000;
   const remaining = Math.max(0, budgetNum - spentAmount);

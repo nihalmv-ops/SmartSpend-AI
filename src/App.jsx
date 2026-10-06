@@ -8,64 +8,54 @@ import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
 import Budget from './pages/Budget';
 import Reports from './pages/Reports';
+import { getTransactions, saveTransactions } from './utils/storage';
 
-const INITIAL_TRANSACTIONS = [
-  {
-    id: 1,
-    title: 'Salary',
-    category: 'Salary',
-    date: 'Today',
-    rawDate: '2026-10-05',
-    amount: 40000,
-    type: 'income',
-    notes: 'Monthly corporate salary credit',
-    iconEmoji: '💼',
-    badgeBg: 'bg-emerald-50 text-emerald-700',
-  },
-  {
-    id: 2,
-    title: 'Restaurant',
-    category: 'Food',
-    date: 'Yesterday',
-    rawDate: '2026-10-04',
-    amount: 450,
-    type: 'expense',
-    notes: 'Dinner with colleagues',
-    iconEmoji: '🍔',
-    badgeBg: 'bg-orange-50 text-orange-700',
-  },
-  {
-    id: 3,
-    title: 'Fuel',
-    category: 'Transport',
-    date: 'Yesterday',
-    rawDate: '2026-10-04',
-    amount: 250,
-    type: 'expense',
-    notes: 'Petrol top-up',
-    iconEmoji: '🚗',
-    badgeBg: 'bg-blue-50 text-blue-700',
-  },
-  {
-    id: 4,
-    title: 'Internet Bill',
-    category: 'Bills',
-    date: 'Oct 2',
-    rawDate: '2026-10-02',
-    amount: 999,
-    type: 'expense',
-    notes: 'Fiber broadband monthly recharge',
-    iconEmoji: '🧾',
-    badgeBg: 'bg-amber-50 text-amber-700',
-  },
-];
-
+/**
+ * App Root Component
+ * 
+ * Demonstrates core React concepts:
+ * 1. useState: holds application state for transactions, modal, and mobile drawer.
+ * 2. useEffect with []: runs once on component mount to load stored data from LocalStorage.
+ * 3. useEffect with [transactions]: runs whenever transactions change to persist data.
+ * 4. Props: passes data down to pages and receives user actions via callbacks.
+ * 5. Immutable state updates: using setTransactions((prev) => [...prev, newTx])
+ *    and setTransactions((prev) => prev.filter(...)) instead of array mutations.
+ */
 export default function App() {
+  // Mobile sidebar drawer open/closed state
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
 
-  // Close sidebar on Escape key press for accessibility
+  // Add Transaction modal open/closed state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Store all transaction objects in React state.
+  // When this state changes, React updates the UI automatically.
+  const [transactions, setTransactions] = useState([]);
+
+  // ========================================================
+  // LOCALSTORAGE PERSISTENCE LIFECYCLE
+  // ========================================================
+
+  // Load previously saved transactions when the component first loads.
+  // The empty dependency array [] tells React to run this effect
+  // only once when the App component initially mounts.
+  useEffect(() => {
+    const savedTransactions = getTransactions();
+    // oxlint-disable-next-line react/set-state-in-effect
+    setTransactions(savedTransactions);
+  }, []);
+
+  // Save the latest transactions whenever the transaction state changes.
+  // The [transactions] dependency array tells React to run this effect
+  // whenever a new transaction is added or an existing one is deleted.
+  useEffect(() => {
+    // Only save once the initial load has populated or set transactions
+    if (transactions.length > 0 || localStorage.getItem('smartspend_transactions') !== null) {
+      saveTransactions(transactions);
+    }
+  }, [transactions]);
+
+  // Keyboard accessibility: dismiss mobile sidebar if Escape key is pressed
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && sidebarOpen) {
@@ -76,64 +66,96 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sidebarOpen]);
 
-  const handleAddTransaction = (newTx) => {
-    const formatted = {
-      id: Date.now(),
-      title: newTx.description,
-      category: newTx.category,
-      date: 'Today',
-      rawDate: newTx.date,
-      amount: Number(newTx.amount),
-      type: newTx.type,
-      notes: newTx.notes,
-      iconEmoji: newTx.type === 'income' ? '💰' : '💳',
-      badgeBg:
-        newTx.type === 'income'
-          ? 'bg-emerald-50 text-emerald-700'
-          : 'bg-slate-100 text-slate-700',
-    };
-    setTransactions((prev) => [formatted, ...prev]);
+  // ========================================================
+  // TRANSACTION ACTION HANDLERS
+  // ========================================================
+
+  /**
+   * Add a new transaction to state.
+   * Add the new transaction to the existing transaction array.
+   * We create a new array instead of directly modifying the old state.
+   *
+   * @param {Object} newTransaction - Transaction object from form
+   */
+  const handleAddTransaction = (newTransaction) => {
+    setTransactions((prev) => [newTransaction, ...prev]);
+  };
+
+  /**
+   * Delete a transaction by its unique ID.
+   * filter() creates a new array without the transaction being deleted.
+   *
+   * @param {number|string} id - The unique ID of the transaction to delete
+   */
+  const handleDeleteTransaction = (id) => {
+    setTransactions((prev) =>
+      prev.filter((transaction) => transaction.id !== id)
+    );
   };
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 antialiased">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Persistent on desktop, drawer on mobile) */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Layout Container */}
       <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden">
+        {/* Top Header with search, quick add, notifications & profile */}
         <Header
           onMenuClick={() => setSidebarOpen((prev) => !prev)}
           onOpenAddModal={() => setIsModalOpen(true)}
         />
 
+        {/* Page Content Viewport */}
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
+            {/* React Router Views */}
             <Routes>
+              {/* Dashboard: Financial overview with dynamic KPIs and recent items */}
               <Route
                 path="/"
                 element={
                   <Dashboard
+                    transactions={transactions}
                     onOpenAddModal={() => setIsModalOpen(true)}
                   />
                 }
               />
+
+              {/* Transactions: Filterable list with search, delete, and add modal */}
               <Route
                 path="/transactions"
                 element={
                   <Transactions
-                    onOpenAddModal={() => setIsModalOpen(true)}
                     transactions={transactions}
+                    onOpenAddModal={() => setIsModalOpen(true)}
+                    onDeleteTransaction={handleDeleteTransaction}
                   />
                 }
               />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/budget" element={<Budget />} />
-              <Route path="/reports" element={<Reports />} />
-              {/* Settings placeholder route redirecting or showing clean view */}
+
+              {/* Analytics: KPI metrics & category spending */}
+              <Route
+                path="/analytics"
+                element={<Analytics transactions={transactions} />}
+              />
+
+              {/* Budget: Spending limits dynamically calculated against expenses */}
+              <Route
+                path="/budget"
+                element={<Budget transactions={transactions} />}
+              />
+
+              {/* Reports: Financial statements & export UI with dynamic summary */}
+              <Route
+                path="/reports"
+                element={<Reports transactions={transactions} />}
+              />
+
+              {/* Settings placeholder route */}
               <Route
                 path="/settings"
                 element={
@@ -145,13 +167,15 @@ export default function App() {
                   </div>
                 }
               />
+
+              {/* Fallback route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </main>
       </div>
 
-      {/* Add Transaction Global Modal */}
+      {/* Global Add Transaction Modal Form */}
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
