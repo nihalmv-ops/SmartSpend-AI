@@ -9,23 +9,37 @@ import {
 } from 'lucide-react';
 
 /**
+ * Helper to safely format amounts with Indian locale formatting (₹)
+ * Handles numbers, strings, and undefined/null values defensively to prevent any runtime errors.
+ */
+const formatAmount = (amount) => {
+  const num =
+    typeof amount === 'number'
+      ? isNaN(amount) ? 0 : amount
+      : Number(String(amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+  return Math.abs(num).toLocaleString('en-IN');
+};
+
+/**
  * TransactionList Component
  * 
- * Displays the list of transactions in both a desktop table and mobile card view.
- * Demonstrates:
- * - map(): transforms JavaScript transaction objects into JSX elements
- * - key prop: gives each item a stable identity for fast virtual DOM reconciliation
- * - Accessible Delete button with Lucide Trash2 icon
- * - Informative empty states for both "no transactions yet" and "no filter matches"
+ * Displays transactions in a responsive desktop table and mobile card layout.
+ * 
+ * Beginner React Concepts:
+ * - props: transactions, totalCount, onDelete, and onOpenAddModal passed from parent.
+ * - Array.prototype.map(): transforms an array of transaction objects into JSX elements.
+ * - key prop: React needs unique keys (e.g. key={transaction.id}) to identify which items
+ *   have changed, been added, or removed, optimizing DOM updates.
+ * - Conditional rendering: showing empty states when transactions count is 0.
  *
  * @param {Array} transactions - The filtered transactions array to display
  * @param {number} totalCount - Total number of stored transactions before filtering
- * @param {Function} onDelete - Callback invoked with transaction ID when deleted
+ * @param {Function} onDelete - Callback invoked with transaction ID when delete is clicked
  * @param {Function} [onOpenAddModal] - Callback to open the Add Transaction modal
  */
 export default function TransactionList({
-  transactions,
-  totalCount,
+  transactions = [],
+  totalCount = 0,
   onDelete,
   onOpenAddModal,
 }) {
@@ -57,7 +71,7 @@ export default function TransactionList({
   }
 
   // Empty State 2: Filters or search query returned 0 matches
-  if (transactions.length === 0) {
+  if (!transactions || transactions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3">
@@ -104,11 +118,15 @@ export default function TransactionList({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {/* 
-              map() converts each transaction object into a React UI element.
-              key helps React identify each item in the list efficiently.
+              map() iterates over transactions array and returns a <tr> element for each item.
+              key={transaction.id} gives React a unique identifier for performance.
             */}
             {transactions.map((transaction) => {
+              if (!transaction) return null;
               const isIncome = transaction.type === 'income';
+              const description =
+                transaction.description || transaction.title || 'Untitled Transaction';
+              const formattedAmt = formatAmount(transaction.amount);
 
               return (
                 <tr
@@ -118,7 +136,7 @@ export default function TransactionList({
                   {/* Description & optional notes */}
                   <td className="px-6 py-4">
                     <div className="font-semibold text-slate-900">
-                      {transaction.description}
+                      {description}
                     </div>
                     {transaction.notes && (
                       <div className="text-xs text-slate-400 font-normal mt-0.5">
@@ -130,13 +148,13 @@ export default function TransactionList({
                   {/* Category badge */}
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                      {transaction.category}
+                      {transaction.category || 'Other'}
                     </span>
                   </td>
 
                   {/* Formatted Date */}
                   <td className="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">
-                    {transaction.date}
+                    {transaction.date || 'Today'}
                   </td>
 
                   {/* Transaction Type badge */}
@@ -151,7 +169,7 @@ export default function TransactionList({
                       ) : (
                         <ArrowUpRight className="h-3.5 w-3.5 text-rose-500" />
                       )}
-                      <span className="capitalize">{transaction.type}</span>
+                      <span className="capitalize">{transaction.type || 'expense'}</span>
                     </span>
                   </td>
 
@@ -162,9 +180,7 @@ export default function TransactionList({
                         isIncome ? 'text-emerald-600' : 'text-slate-900'
                       }`}
                     >
-                      {isIncome
-                        ? `+₹${transaction.amount.toLocaleString('en-IN')}`
-                        : `-₹${transaction.amount.toLocaleString('en-IN')}`}
+                      {isIncome ? `+₹${formattedAmt}` : `-₹${formattedAmt}`}
                     </span>
                   </td>
 
@@ -172,9 +188,9 @@ export default function TransactionList({
                   <td className="px-6 py-4 text-right whitespace-nowrap">
                     <button
                       type="button"
-                      onClick={() => onDelete(transaction.id)}
+                      onClick={() => onDelete && onDelete(transaction.id)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
-                      aria-label={`Delete transaction ${transaction.description}`}
+                      aria-label={`Delete transaction ${description}`}
                       title="Delete transaction"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -192,9 +208,12 @@ export default function TransactionList({
           Eliminates horizontal scrolling on mobile viewports.
           ======================================================== */}
       <div className="divide-y divide-slate-100 md:hidden">
-        {/* map() generates mobile cards for each transaction */}
         {transactions.map((transaction) => {
+          if (!transaction) return null;
           const isIncome = transaction.type === 'income';
+          const description =
+            transaction.description || transaction.title || 'Untitled Transaction';
+          const formattedAmt = formatAmount(transaction.amount);
 
           return (
             <div
@@ -205,13 +224,13 @@ export default function TransactionList({
                 {/* Left: Description, Date, and Category */}
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
-                    {transaction.description}
+                    {description}
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                    <span>{transaction.date}</span>
+                    <span>{transaction.date || 'Today'}</span>
                     <span>•</span>
                     <span className="font-medium text-slate-600">
-                      {transaction.category}
+                      {transaction.category || 'Other'}
                     </span>
                   </div>
                 </div>
@@ -224,25 +243,23 @@ export default function TransactionList({
                         isIncome ? 'text-emerald-600' : 'text-slate-900'
                       }`}
                     >
-                      {isIncome
-                        ? `+₹${transaction.amount.toLocaleString('en-IN')}`
-                        : `-₹${transaction.amount.toLocaleString('en-IN')}`}
+                      {isIncome ? `+₹${formattedAmt}` : `-₹${formattedAmt}`}
                     </div>
                     <span
                       className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider ${
                         isIncome ? 'text-emerald-600' : 'text-rose-600'
                       }`}
                     >
-                      {transaction.type}
+                      {transaction.type || 'expense'}
                     </span>
                   </div>
 
                   {/* Accessible Mobile Delete button */}
                   <button
                     type="button"
-                    onClick={() => onDelete(transaction.id)}
+                    onClick={() => onDelete && onDelete(transaction.id)}
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 transition-colors"
-                    aria-label={`Delete ${transaction.description}`}
+                    aria-label={`Delete ${description}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

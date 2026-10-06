@@ -2,7 +2,7 @@
 
 > **Smart expense tracking, budgeting, and spending insights.**
 
-SmartSpend AI is a modern personal financial dashboard and expense tracking application built with React, Vite, React Router, and Tailwind CSS. Designed with a clean SaaS aesthetic, responsive multi-device layouts, and an accessible component architecture.
+SmartSpend AI is a modern personal financial dashboard and expense tracking application built with React, Vite, React Router, and Tailwind CSS. Designed with a clean SaaS aesthetic, responsive multi-device layouts, accessible component architecture, and beginner-friendly React patterns.
 
 ---
 
@@ -14,29 +14,25 @@ SmartSpend AI is a modern personal financial dashboard and expense tracking appl
 - 📱 **Fully Responsive Layout**: Seamless experience across mobile, tablet, laptop, and desktop viewports.
 - 🧭 **Sidebar Navigation**: Dashboard, Transactions, Analytics, Budget, Reports, and Settings, plus an AI Smart Insights card and mobile drawer.
 - 🔍 **Top Navigation Header**: Search bar, notification alerts, and user profile avatar with accessible states.
-- 📊 **Financial Summary Cards**: High-visibility metric cards for Total Income (₹45,000), Total Expenses (₹18,500), Current Balance (₹26,500), and Monthly Budget (₹30,000).
-- 📈 **Spending Overview**: Structured chart container reserved for interactive Recharts visualizations.
-- 🎯 **Monthly Budget Progress**: 62% utilization progress indicator showing ₹11,500 remaining.
-- 🍔 **Recent Transactions Panel**: Clean transaction feed with category emojis, subtle income/expense color indicators, and timestamp metadata.
+- 📊 **Financial Summary Cards**: High-visibility metric cards for Total Income (₹40,000), Total Expenses (₹1,699), Current Balance (₹38,301), and Monthly Budget (₹30,000).
 - ♿ **Accessibility & Semantics**: Semantic HTML (`<aside>`, `<header>`, `<main>`, `<section>`), keyboard-navigable controls, and ARIA attributes.
 
 ### Day 2 — Core Dashboard & Multi-Page UI
 - 🗺️ **Client-Side Routing with React Router**: Full routing across `/`, `/transactions`, `/analytics`, `/budget`, and `/reports` with active NavLink indicators.
-- 💳 **Transactions Page (`/transactions`)**: Full management view featuring real-time search, filters (All, Income, Expense, Category), responsive desktop table, and mobile card views without horizontal scrolling.
+- 💳 **Transactions Page (`/transactions`)**: Full management view featuring search input, type filters (All, Income, Expense), category dropdown, desktop table, and mobile card views without horizontal scrolling.
 - ➕ **Transaction Modal (`TransactionModal.jsx`)**: Accessible modal dialog with type selector (Income/Expense), description, amount (₹), category dropdown, date picker, notes, and keyboard trapping/escape listener.
 - 📈 **Analytics Page (`/analytics`)**: Timeframe toggle (Monthly/Yearly), KPI cards (Total Spending, Average Daily, Top Category, Savings Rate), and prepared Recharts chart placeholders.
 - 🎯 **Budget Planning Page (`/budget`)**: Target limit visualization, utilization percentage, category allocation bars, and interactive "Set Budget" configuration form.
-- 📑 **Financial Reports Page (`/reports`)**: Cash flow summary cards, 6-month historical performance audit table, and CSV/PDF export UI actions.
-- 🧩 **Component Architecture & Reuse**: Modular `PageHeader`, `SummaryCard`, `BudgetCard`, `RecentTransactions`, `TransactionModal`, `Sidebar`, and `Header` components.
+- 📑 **Financial Reports Page (`/reports`)**: Cash flow summary cards, statements preview, and CSV/PDF export UI actions.
 
-### Day 3 — Functional Transaction System & LocalStorage
-- 💾 **LocalStorage Persistence**: Implemented `getTransactions()` and `saveTransactions()` in `storage.js` using `JSON.stringify()` and `JSON.parse()`. Data persists across browser refreshes.
-- ➕ **Functional Add Transaction Form**: Controlled form inputs with validation (description, amount > 0, category, date), `e.preventDefault()`, and immutable state updates.
-- 🗑️ **Delete Transaction Action**: Immutable deletion using `filter()` with accessible Lucide `Trash2` icon buttons.
-- 🔍 **Real-Time Search & Combined Filtering**: Instant multi-condition filtering combining description text search, type filter (All, Income, Expense), and category dropdown.
-- 📊 **Dynamic Income & Expense Calculations**: Real-time totals computed using `reduce()` and `filter()`. Dynamic Total Income, Total Expenses, and Net Balance reflected instantly across the Dashboard and Reports.
-- 📋 **Reusable TransactionList Component**: Clean table on desktop and touch-friendly cards on mobile with zero horizontal scroll and informative empty states.
-- 📚 **Beginner-Friendly Code Comments**: Educational comments explaining React hooks (`useState`, `useEffect`), props, array methods (`map`, `filter`, `reduce`), and LocalStorage flow for college review.
+### Day 3 — Functional Transaction System & LocalStorage Persistence
+- 💾 **Permanent LocalStorage Persistence**: Transactions are saved and loaded in browser storage using `JSON.stringify()` and `JSON.parse()`.
+- ➕ **Add Transactions**: Fully functional modal form with validation, controlled inputs, and `e.preventDefault()`.
+- 🗑️ **Delete Transactions**: Delete any transaction instantly with accessible Trash icon action buttons.
+- 🔍 **Real-Time Search & Multi-Filters**: Instant case-insensitive search by description or notes, and filtering by Type (Income/Expense) and Category.
+- 🧮 **Dynamic Financial Calculations**: Live calculation of Total Income, Total Expenses, and Current Balance using `reduce()` and formatted in Indian Rupees (`toLocaleString('en-IN')`).
+- 🛡️ **Defensive Architecture & Error Boundary**: Robust normalization of all transactions and top-level `ErrorBoundary` to completely prevent white screen crashes.
+- 📚 **Beginner-Friendly Code Comments**: Clear educational explanations of `useState`, `useEffect`, `props`, `map()`, `filter()`, `reduce()`, controlled inputs, and React keys.
 
 ---
 
@@ -47,8 +43,8 @@ SmartSpend AI is a modern personal financial dashboard and expense tracking appl
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
-- **Charts Engine**: Recharts (installed, interactive charts active Day 4)
-- **Data Persistence**: Browser LocalStorage
+- **Charts Engine**: Recharts
+- **Storage**: Browser LocalStorage
 - **Currency**: Indian Rupee (₹)
 
 ---
@@ -60,27 +56,28 @@ smartspend-ai/
 ├── public/
 ├── src/
 │   ├── components/
+│   │   ├── ErrorBoundary.jsx      # Catches runtime errors to prevent blank screen crashes
 │   │   ├── PageHeader.jsx         # Reusable page header with title, subtitle & action slots
+│   │   ├── TransactionList.jsx    # Responsive transaction table/card list with delete actions
 │   │   ├── TransactionModal.jsx   # Accessible modal dialog for adding income/expense
-│   │   ├── TransactionList.jsx    # Table & card list with delete action & empty states
 │   │   ├── Sidebar.jsx            # Responsive navigation & NavLinks with active indicators
 │   │   ├── Header.jsx             # Top bar with search, quick add, notifications & profile
 │   │   ├── SummaryCard.jsx        # Reusable metric card with color variants
 │   │   ├── BudgetCard.jsx         # Monthly budget progress & remaining balance
-│   │   └── RecentTransactions.jsx # Dynamic transaction feed on Dashboard
+│   │   └── RecentTransactions.jsx # Dynamic transaction feed on main dashboard
 │   ├── pages/
-│   │   ├── Dashboard.jsx          # Dynamic financial dashboard with live KPI metrics
-│   │   ├── Transactions.jsx       # Search & multi-filter transaction management
-│   │   ├── Analytics.jsx          # KPI metrics & Recharts analytics placeholders
-│   │   ├── Budget.jsx             # Dynamic budget utilization & target allocation form
-│   │   └── Reports.jsx            # Monthly statements & dynamic summary reports
+│   │   ├── Dashboard.jsx          # Live financial overview with dynamic metrics
+│   │   ├── Transactions.jsx       # Transaction management with search, filter & delete
+│   │   ├── Analytics.jsx          # KPI metrics & spending breakdown
+│   │   ├── Budget.jsx             # Budget utilization & target allocation form
+│   │   └── Reports.jsx            # Dynamic statements & export UI
 │   ├── data/
 │   │   └── categories.js          # Core expense & income categories
 │   ├── utils/
-│   │   └── storage.js             # LocalStorage save/load helpers
-│   ├── App.jsx                    # Root state management & LocalStorage lifecycle
+│   │   └── storage.js             # LocalStorage helper functions & normalization
+│   ├── App.jsx                    # Root routes layout, state management & LocalStorage sync
 │   ├── index.css                  # Tailwind CSS import & base styles
-│   └── main.jsx                   # React entrypoint wrapped in BrowserRouter
+│   └── main.jsx                   # React entrypoint wrapped in ErrorBoundary & BrowserRouter
 ├── index.html
 ├── package.json
 ├── vite.config.js
@@ -92,11 +89,11 @@ smartspend-ai/
 ## 🗓️ 6-Day Development Roadmap
 
 - [x] **Day 1**: Project Setup, Tailwind UI Foundation & Responsive Dashboard Layout
-- [x] **Day 2**: React Router Navigation, Multi-Page Views & Modal Form Architecture
-- [x] **Day 3**: Functional Transaction System, Add/Delete, Search/Filter, Calculations & LocalStorage
+- [x] **Day 2**: React Router Navigation, Transactions Management, Modal Form & Full Page Architecture
+- [x] **Day 3**: Functional Transaction System, Add/Delete, Search/Filter & LocalStorage Persistence
 - [ ] **Day 4**: Recharts Visualizations & Expense Analytics Breakdown
-- [ ] **Day 5**: AI-Powered Spending Insights & Budget Alerts
-- [ ] **Day 6**: Polish, Accessibility Audit & Vercel Production Deployment
+- [ ] **Day 5**: AI-Powered Spending Insights & Category Budgets
+- [ ] **Day 6**: Polish, Accessibility Audit & Vercel Live Deployment
 
 ---
 

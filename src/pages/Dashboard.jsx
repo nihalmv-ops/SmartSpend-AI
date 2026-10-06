@@ -17,39 +17,48 @@ import RecentTransactions from '../components/RecentTransactions';
  * Dashboard Page Component
  * 
  * Demonstrates:
- * - filter() & reduce(): dynamically calculating total income and expenses
- * - Dynamic state values in summary cards instead of hardcoded numbers
- * - toLocaleString("en-IN"): formatting numbers with Indian currency notation (e.g., 40,000)
+ * - Array.prototype.filter(): extracts income or expense subsets from transactions.
+ * - Array.prototype.reduce(): aggregates numbers into a single running total.
+ * - Dynamic data flow: passing calculated numbers down to reusable child cards.
+ * - Number.prototype.toLocaleString('en-IN'): formats numbers into the Indian Rupee system (e.g. ₹40,000).
  *
- * @param {Array} transactions - All transaction objects from App state
- * @param {Function} onOpenAddModal - Opens the Add Transaction modal
+ * @param {Array} transactions - Active transactions array from App state
+ * @param {Function} onOpenAddModal - Callback to trigger the Add Transaction modal
  */
-export default function Dashboard({
-  transactions = [],
-  onOpenAddModal,
-}) {
+export default function Dashboard({ transactions = [], onOpenAddModal }) {
   const [timeframe, setTimeframe] = useState('Monthly');
 
   // ========================================================
   // DYNAMIC FINANCIAL CALCULATIONS
   // ========================================================
 
-  // First select income transactions using filter(),
-  // then use reduce() to calculate their total amount.
-  const totalIncome = transactions
-    .filter((transaction) => transaction.type === 'income')
-    .reduce((total, transaction) => total + transaction.amount, 0);
+  // Calculate total income using Array.prototype.reduce()
+  // reduce() starts with initial sum of 0 and adds each income transaction's amount.
+  const totalIncome = (transactions || [])
+    .filter((tx) => tx && tx.type === 'income')
+    .reduce((sum, tx) => {
+      const amt =
+        typeof tx.amount === 'number'
+          ? isNaN(tx.amount) ? 0 : tx.amount
+          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
-  // Select expense transactions using filter(),
-  // then calculate their total sum using reduce().
-  const totalExpenses = transactions
-    .filter((transaction) => transaction.type === 'expense')
-    .reduce((total, transaction) => total + transaction.amount, 0);
+  // Calculate total expenses using Array.prototype.reduce()
+  const totalExpenses = (transactions || [])
+    .filter((tx) => tx && tx.type === 'expense')
+    .reduce((sum, tx) => {
+      const amt =
+        typeof tx.amount === 'number'
+          ? isNaN(tx.amount) ? 0 : tx.amount
+          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
-  // Calculate the current balance by subtracting total expenses from total income.
-  const balance = totalIncome - totalExpenses;
+  // Current balance = Total Income - Total Expenses
+  const currentBalance = totalIncome - totalExpenses;
 
-  // Monthly budget constant (temporary static value for Day 3)
+  // Monthly budget benchmark
   const monthlyBudget = 30000;
   const remainingBudget = Math.max(0, monthlyBudget - totalExpenses);
   const budgetPercentage = Math.min(
@@ -59,11 +68,11 @@ export default function Dashboard({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Dashboard Top Header */}
+      {/* Dashboard Page Header */}
       <PageHeader
         label="Financial Overview"
         title="Good morning 👋"
-        subtitle="Here's your live financial overview for this month."
+        subtitle="Here's your live financial overview."
       >
         <button
           type="button"
@@ -76,54 +85,48 @@ export default function Dashboard({
         </button>
       </PageHeader>
 
-      {/* 
-        Dynamic Summary Cards Grid:
-        Values are computed dynamically in real-time from the transactions array!
-      */}
+      {/* 4 Dynamic Summary Cards Grid */}
       <section
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         aria-label="Key Financial Metrics"
       >
-        {/* Dynamic Total Income */}
         <SummaryCard
           title="Total Income"
           value={`₹${totalIncome.toLocaleString('en-IN')}`}
           icon={TrendingUp}
           variant="emerald"
-          subtitle={`${transactions.filter((t) => t.type === 'income').length} credit transactions`}
+          subtitle={`${transactions.filter((t) => t && t.type === 'income').length} income records`}
         />
-
-        {/* Dynamic Total Expenses */}
         <SummaryCard
           title="Total Expenses"
           value={`₹${totalExpenses.toLocaleString('en-IN')}`}
           icon={TrendingDown}
           variant="rose"
-          subtitle={`${transactions.filter((t) => t.type === 'expense').length} debit transactions`}
+          subtitle={
+            totalIncome > 0
+              ? `${Math.round((totalExpenses / totalIncome) * 100)}% of total income`
+              : 'Outflow recorded'
+          }
         />
-
-        {/* Dynamic Current Balance */}
         <SummaryCard
           title="Current Balance"
-          value={`₹${balance.toLocaleString('en-IN')}`}
+          value={`₹${currentBalance.toLocaleString('en-IN')}`}
           icon={Wallet}
           variant="indigo"
-          subtitle="Net available balance"
+          subtitle={currentBalance >= 0 ? 'Healthy net savings' : 'Budget deficit'}
         />
-
-        {/* Monthly Budget Target */}
         <SummaryCard
           title="Monthly Budget"
           value={`₹${monthlyBudget.toLocaleString('en-IN')}`}
           icon={Target}
           variant="purple"
-          subtitle="Set for October 2026"
+          subtitle={`${budgetPercentage}% used this month`}
         />
       </section>
 
-      {/* Main Grid: Spending Overview (Chart Placeholder) + Dynamic Budget Progress */}
+      {/* Main Insights Grid: Spending Overview (Chart Placeholder) + Budget Card */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Spending Overview Panel */}
+        {/* Spending Overview Panel (Spans 2 columns on desktop) */}
         <section
           className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs lg:col-span-2"
           aria-label="Spending Overview Chart"
@@ -139,7 +142,7 @@ export default function Dashboard({
               </p>
             </div>
 
-            {/* Timeframe Dropdown */}
+            {/* Timeframe Select Dropdown */}
             <div className="flex items-center gap-2">
               <label htmlFor="timeframe-select" className="sr-only">
                 Select timeframe
@@ -163,7 +166,7 @@ export default function Dashboard({
 
           {/* Chart Placeholder Area (Scheduled for Day 4 Recharts implementation) */}
           <div className="relative mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-            {/* Silhouette preview */}
+            {/* Visual silhouette background mimicking a chart */}
             <div
               className="absolute inset-x-6 bottom-8 flex h-32 items-end justify-between gap-3 opacity-25 pointer-events-none"
               aria-hidden="true"
@@ -177,7 +180,7 @@ export default function Dashboard({
               <div className="w-full h-[45%] rounded-t bg-indigo-300" />
             </div>
 
-            {/* Info callout */}
+            {/* Placeholder info box */}
             <div className="relative z-10 flex flex-col items-center max-w-sm rounded-xl bg-white/95 p-5 shadow-xs border border-slate-100">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-3 shadow-2xs">
                 <BarChart3 className="h-6 w-6" />
@@ -193,7 +196,7 @@ export default function Dashboard({
               </span>
             </div>
 
-            {/* Week labels */}
+            {/* Timeline axis labels */}
             <div
               className="absolute inset-x-6 bottom-2 flex justify-between text-[10px] font-medium text-slate-400"
               aria-hidden="true"

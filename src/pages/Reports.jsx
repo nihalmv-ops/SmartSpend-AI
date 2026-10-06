@@ -11,18 +11,40 @@ import {
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
+/**
+ * Reports Page Component
+ * 
+ * Demonstrates:
+ * - Dynamic aggregation of financial statements with Array.prototype.reduce().
+ * - Safe numeric parsing and Indian currency formatting (en-IN).
+ * - UI feedback notifications for export actions.
+ *
+ * @param {Array} transactions - Active transactions array from App state
+ */
 export default function Reports({ transactions = [] }) {
   const [period, setPeriod] = useState('Monthly');
   const [exportNotice, setExportNotice] = useState(null);
 
-  // Dynamic calculations from transactions
-  const totalIncome = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Dynamic calculations from transactions using reduce()
+  const totalIncome = (transactions || [])
+    .filter((t) => t && t.type === 'income')
+    .reduce((sum, t) => {
+      const amt =
+        typeof t.amount === 'number'
+          ? isNaN(t.amount) ? 0 : t.amount
+          : Number(String(t.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = (transactions || [])
+    .filter((t) => t && t.type === 'expense')
+    .reduce((sum, t) => {
+      const amt =
+        typeof t.amount === 'number'
+          ? isNaN(t.amount) ? 0 : t.amount
+          : Number(String(t.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
   const netSavings = totalIncome - totalExpenses;
   const savingsRate =
@@ -120,92 +142,81 @@ export default function Reports({ transactions = [] }) {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Financial Statement Summary Cards */}
       <section
-        className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-        aria-label="Financial Report Summary"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        aria-label="Statement Metrics"
       >
         <SummaryCard
-          title="Income"
+          title="Gross Income"
           value={`₹${totalIncome.toLocaleString('en-IN')}`}
           icon={TrendingUp}
           variant="emerald"
-          subtitle="Total verified cash inflow"
+          subtitle="Total inflows received"
         />
         <SummaryCard
-          title="Expenses"
+          title="Total Outflow"
           value={`₹${totalExpenses.toLocaleString('en-IN')}`}
           icon={TrendingDown}
           variant="rose"
-          subtitle="Total recorded expenses"
+          subtitle="Operating living expenses"
         />
         <SummaryCard
-          title="Savings"
+          title="Net Savings"
           value={`₹${netSavings.toLocaleString('en-IN')}`}
           icon={PiggyBank}
           variant="indigo"
-          subtitle={`Net retained surplus (${savingsRate}%)`}
+          subtitle={`Savings rate: ${savingsRate}%`}
+        />
+        <SummaryCard
+          title="Statement Status"
+          value="Reconciled"
+          icon={CheckCircle2}
+          variant="purple"
+          subtitle="Ready for audit"
         />
       </section>
 
-      {/* Monthly Financial Breakdown Table */}
+      {/* Statement Preview Container */}
       <section
         className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs"
-        aria-label="Monthly Breakdown Table"
+        aria-label="Statement Preview"
       >
-        <div className="border-b border-slate-100 pb-4">
-          <h2 className="text-base font-bold text-slate-900">
-            Monthly Performance Summary
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Audit of past 6 months cash flow & net savings
-          </p>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Statement Summary
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Live consolidated balance sheet
+            </p>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+            {period} Summary
+          </span>
         </div>
 
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
-              <tr>
-                <th scope="col" className="px-4 py-3">Month</th>
-                <th scope="col" className="px-4 py-3">Income</th>
-                <th scope="col" className="px-4 py-3">Expenses</th>
-                <th scope="col" className="px-4 py-3">Net Savings</th>
-                <th scope="col" className="px-4 py-3 text-right">Savings Rate</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {[
-                { month: 'October 2026 (Current)', income: '₹45,000', expenses: '₹18,500', savings: '₹26,500', rate: '58.9%', isCurrent: true },
-                { month: 'September 2026', income: '₹42,000', expenses: '₹19,200', savings: '₹22,800', rate: '54.2%', isCurrent: false },
-                { month: 'August 2026', income: '₹40,000', expenses: '₹21,100', savings: '₹18,900', rate: '47.2%', isCurrent: false },
-                { month: 'July 2026', income: '₹40,000', expenses: '₹17,400', savings: '₹22,600', rate: '56.5%', isCurrent: false },
-                { month: 'June 2026', income: '₹38,000', expenses: '₹16,500', savings: '₹21,500', rate: '56.5%', isCurrent: false },
-              ].map((row, idx) => (
-                <tr
-                  key={idx}
-                  className={`transition-colors hover:bg-slate-50/70 ${
-                    row.isCurrent ? 'bg-indigo-50/30 font-medium' : ''
-                  }`}
-                >
-                  <td className="px-4 py-3.5 text-slate-900 font-semibold">
-                    {row.month}
-                  </td>
-                  <td className="px-4 py-3.5 text-emerald-600 font-medium">
-                    {row.income}
-                  </td>
-                  <td className="px-4 py-3.5 text-rose-600 font-medium">
-                    {row.expenses}
-                  </td>
-                  <td className="px-4 py-3.5 text-slate-900 font-semibold">
-                    {row.savings}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-bold text-indigo-600">
-                    {row.rate}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4">
+            <span className="text-sm font-semibold text-slate-700">Total Credits</span>
+            <span className="text-sm font-bold text-emerald-600">
+              +₹{totalIncome.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 p-4">
+            <span className="text-sm font-semibold text-slate-700">Total Debits</span>
+            <span className="text-sm font-bold text-rose-600">
+              -₹{totalExpenses.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl bg-indigo-50/50 p-4 border border-indigo-100/50">
+            <span className="text-sm font-bold text-indigo-950">Net Retained Cash</span>
+            <span className="text-base font-bold text-indigo-700">
+              ₹{netSavings.toLocaleString('en-IN')}
+            </span>
+          </div>
         </div>
       </section>
     </div>

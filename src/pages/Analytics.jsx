@@ -10,41 +10,71 @@ import {
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
+/**
+ * Analytics Page Component
+ * 
+ * Demonstrates:
+ * - Aggregating dynamic transaction values with Array.prototype.reduce().
+ * - Dynamic category grouping: identifying the highest spending category.
+ * - Dynamic savings rate calculation.
+ *
+ * @param {Array} transactions - Active transactions array from App state
+ */
 export default function Analytics({ transactions = [] }) {
   const [period, setPeriod] = useState('Monthly');
 
-  // Dynamic calculations from transactions
-  const totalIncome = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Total expenses calculation using reduce()
+  const totalExpenses = (transactions || [])
+    .filter((tx) => tx && tx.type === 'expense')
+    .reduce((sum, tx) => {
+      const amt =
+        typeof tx.amount === 'number'
+          ? isNaN(tx.amount) ? 0 : tx.amount
+          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Total income calculation using reduce()
+  const totalIncome = (transactions || [])
+    .filter((tx) => tx && tx.type === 'income')
+    .reduce((sum, tx) => {
+      const amt =
+        typeof tx.amount === 'number'
+          ? isNaN(tx.amount) ? 0 : tx.amount
+          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      return sum + amt;
+    }, 0);
 
+  // Average daily expense based on a standard 30-day billing cycle
   const averageDaily = Math.round(totalExpenses / 30);
 
-  // Determine top expense category
-  const categoryTotals = {};
-  transactions
-    .filter((t) => t.type === 'expense')
-    .forEach((t) => {
-      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
+  // Calculate top spending category
+  const categoryTotals = (transactions || [])
+    .filter((tx) => tx && tx.type === 'expense')
+    .reduce((acc, tx) => {
+      const cat = tx.category || 'Other';
+      const amt =
+        typeof tx.amount === 'number'
+          ? isNaN(tx.amount) ? 0 : tx.amount
+          : Number(String(tx.amount || 0).replace(/[^0-9.-]+/g, '')) || 0;
+      acc[cat] = (acc[cat] || 0) + amt;
+      return acc;
+    }, {});
 
   let topCategory = 'None';
-  let topAmount = 0;
-  Object.entries(categoryTotals).forEach(([cat, amt]) => {
-    if (amt > topAmount) {
-      topAmount = amt;
+  let highestAmount = 0;
+  Object.entries(categoryTotals).forEach(([cat, amount]) => {
+    if (amount > highestAmount) {
+      highestAmount = amount;
       topCategory = cat;
     }
   });
 
+  // Calculate savings rate percentage
   const savingsRate =
     totalIncome > 0
-      ? (((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1)
-      : '0.0';
+      ? Math.max(0, ((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1) + '%'
+      : '0.0%';
 
   return (
     <div className="space-y-6 pb-12">
@@ -109,14 +139,18 @@ export default function Analytics({ transactions = [] }) {
           value={topCategory}
           icon={Utensils}
           variant="purple"
-          subtitle={topAmount > 0 ? `₹${topAmount.toLocaleString('en-IN')} spent` : 'No expenses yet'}
+          subtitle={
+            highestAmount > 0
+              ? `₹${highestAmount.toLocaleString('en-IN')} total spent`
+              : 'No recorded expenses'
+          }
         />
         <SummaryCard
           title="Savings Rate"
-          value={`${savingsRate}%`}
+          value={savingsRate}
           icon={Percent}
           variant="emerald"
-          subtitle="Above recommended 20%"
+          subtitle="Net savings ratio"
         />
       </section>
 
@@ -133,50 +167,32 @@ export default function Analytics({ transactions = [] }) {
                 Spending by Category
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Breakdown across your active expense buckets
+                Category allocation breakdown
               </p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <PieChart className="h-4 w-4" />
-            </div>
+            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+              {period}
+            </span>
           </div>
 
-          {/* Chart Placeholder Box */}
-          <div className="relative mt-6 flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-            {/* Silhouette preview */}
-            <div className="flex items-center justify-center gap-6 opacity-30 pointer-events-none mb-4" aria-hidden="true">
-              <div className="h-28 w-28 rounded-full border-8 border-indigo-500 border-t-purple-400 border-r-pink-400" />
-            </div>
+          {/* Donut Chart Placeholder */}
+          <div className="relative mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+            {/* Visual faux chart ring */}
+            <div
+              className="flex h-36 w-36 items-center justify-center rounded-full border-8 border-indigo-200 border-t-indigo-600 border-r-indigo-400 opacity-40 pointer-events-none"
+              aria-hidden="true"
+            />
 
-            <div className="relative z-10 flex flex-col items-center max-w-xs rounded-xl bg-white/95 p-4 shadow-xs border border-slate-100">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 mb-2">
+            <div className="relative z-10 flex flex-col items-center max-w-xs mt-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-2 shadow-2xs">
                 <PieChart className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-semibold text-slate-800">
-                Category Distribution
+                Category Breakdown Chart
               </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Interactive Recharts donut chart with category distribution scheduled for Day 3.
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                Ready for Recharts PieChart component coming in future milestones.
               </p>
-              <span className="mt-2.5 inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-[10px] font-semibold text-purple-700">
-                Day 3 Recharts Component
-              </span>
-            </div>
-
-            {/* Category breakdown pill preview */}
-            <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] font-medium text-slate-500">
-              <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 border border-slate-200">
-                🍔 Food (42%)
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 border border-slate-200">
-                🚗 Transport (24%)
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 border border-slate-200">
-                🧾 Bills (18%)
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 border border-slate-200">
-                🛍️ Shopping (16%)
-              </span>
             </div>
           </div>
         </section>
@@ -189,58 +205,42 @@ export default function Analytics({ transactions = [] }) {
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Monthly Spending
+                Monthly Spending Trend
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Spending velocity compared over time
+                Outflow trajectory over time
               </p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              <BarChart3 className="h-4 w-4" />
-            </div>
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+              6 Months
+            </span>
           </div>
 
-          {/* Chart Placeholder Box */}
-          <div className="relative mt-6 flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-            {/* Visual silhouette background mimicking bar chart */}
+          {/* Bar Chart Placeholder */}
+          <div className="relative mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+            {/* Visual faux bar silhouette */}
             <div
-              className="absolute inset-x-6 bottom-8 flex h-28 items-end justify-between gap-3 opacity-25 pointer-events-none"
+              className="absolute inset-x-8 bottom-6 flex h-28 items-end justify-between gap-4 opacity-25 pointer-events-none"
               aria-hidden="true"
             >
-              <div className="w-full h-[55%] rounded-t bg-indigo-400" />
-              <div className="w-full h-[70%] rounded-t bg-indigo-500" />
-              <div className="w-full h-[45%] rounded-t bg-indigo-400" />
-              <div className="w-full h-[85%] rounded-t bg-indigo-600" />
-              <div className="w-full h-[60%] rounded-t bg-indigo-400" />
               <div className="w-full h-[40%] rounded-t bg-indigo-300" />
+              <div className="w-full h-[60%] rounded-t bg-indigo-400" />
+              <div className="w-full h-[80%] rounded-t bg-indigo-500" />
+              <div className="w-full h-[55%] rounded-t bg-indigo-300" />
+              <div className="w-full h-[90%] rounded-t bg-indigo-600" />
+              <div className="w-full h-[70%] rounded-t bg-indigo-400" />
             </div>
 
-            <div className="relative z-10 flex flex-col items-center max-w-xs rounded-xl bg-white/95 p-4 shadow-xs border border-slate-100">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-2">
+            <div className="relative z-10 flex flex-col items-center max-w-xs">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 mb-2 shadow-2xs">
                 <BarChart3 className="h-5 w-5" />
               </div>
               <h3 className="text-sm font-semibold text-slate-800">
-                Historical Trend Chart
+                Monthly Trend Chart
               </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Recharts multi-bar and area comparisons will be activated in Day 3.
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                Ready for Recharts ResponsiveContainer and BarChart.
               </p>
-              <span className="mt-2.5 inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                Day 3 Recharts Component
-              </span>
-            </div>
-
-            {/* Months preview */}
-            <div
-              className="absolute inset-x-6 bottom-2 flex justify-between text-[10px] font-medium text-slate-400"
-              aria-hidden="true"
-            >
-              <span>May</span>
-              <span>Jun</span>
-              <span>Jul</span>
-              <span>Aug</span>
-              <span>Sep</span>
-              <span>Oct</span>
             </div>
           </div>
         </section>

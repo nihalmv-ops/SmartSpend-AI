@@ -7,11 +7,11 @@ import { CATEGORIES } from '../data/categories';
 /**
  * Transactions Page Component
  * 
- * Demonstrates:
- * - useState: managing search input, type filter, and category filter state
- * - Controlled inputs: input elements bound to React state
- * - filter() array method: filtering arrays immutably based on multiple criteria
- * - Component composition: passing filtered data to TransactionList
+ * Demonstrates core React concepts:
+ * - useState: manages state for search query, type filter, and category filter.
+ * - Controlled inputs: input and select elements bound to state via value and onChange.
+ * - Array.prototype.filter(): creates a new filtered array immutably without altering the original array.
+ * - Props: receives transactions and callback handlers from parent App component.
  *
  * @param {Array} transactions - Full list of transaction objects from parent App state
  * @param {Function} onOpenAddModal - Function to open the Add Transaction modal
@@ -28,22 +28,23 @@ export default function Transactions({
   // This state stores the selected type filter: "all", "income", or "expense".
   const [typeFilter, setTypeFilter] = useState('all');
 
-  // This state stores the selected category filter: "all" or specific category name.
+  // This state stores the selected category filter: "all" or a specific category name.
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   /**
-   * Combined filtering:
+   * Filter transactions based on search query, type, and category.
    * filter() creates a new array containing only elements that satisfy all condition tests.
-   * It runs whenever search, typeFilter, categoryFilter, or transactions change.
    */
-  const filteredTransactions = transactions.filter((transaction) => {
-    // 1. Filter transactions based on the search text matching description or notes
+  const filteredTransactions = (transactions || []).filter((transaction) => {
+    if (!transaction) return false;
+
+    // 1. Filter transactions based on search text matching description, title, or notes
+    const desc = (transaction.description || transaction.title || '').toLowerCase();
+    const notes = (transaction.notes || '').toLowerCase();
+    const query = (search || '').toLowerCase().trim();
+
     const matchesSearch =
-      transaction.description
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (transaction.notes &&
-        transaction.notes.toLowerCase().includes(search.toLowerCase()));
+      !query || desc.includes(query) || notes.includes(query);
 
     // 2. Filter by transaction type (income or expense)
     const matchesType =
@@ -141,7 +142,7 @@ export default function Transactions({
               </button>
             </div>
 
-            {/* Category Filter Dropdown (Options mapped directly from categories.js) */}
+            {/* Category Filter Dropdown */}
             <div className="relative">
               <label htmlFor="tx-category-filter" className="sr-only">
                 Filter by Category
@@ -171,7 +172,7 @@ export default function Transactions({
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
         <TransactionList
           transactions={filteredTransactions}
-          totalCount={transactions.length}
+          totalCount={(transactions || []).length}
           onDelete={onDeleteTransaction}
           onOpenAddModal={onOpenAddModal}
         />

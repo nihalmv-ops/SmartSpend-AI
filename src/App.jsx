@@ -8,18 +8,22 @@ import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
 import Budget from './pages/Budget';
 import Reports from './pages/Reports';
-import { getTransactions, saveTransactions } from './utils/storage';
+import {
+  getTransactions,
+  saveTransactions,
+  normalizeTransaction,
+} from './utils/storage';
 
 /**
  * App Root Component
  * 
  * Demonstrates core React concepts:
  * 1. useState: holds application state for transactions, modal, and mobile drawer.
- * 2. useEffect with []: runs once on component mount to load stored data from LocalStorage.
- * 3. useEffect with [transactions]: runs whenever transactions change to persist data.
- * 4. Props: passes data down to pages and receives user actions via callbacks.
- * 5. Immutable state updates: using setTransactions((prev) => [...prev, newTx])
- *    and setTransactions((prev) => prev.filter(...)) instead of array mutations.
+ *    Using useState(() => getTransactions()) loads stored items once on initial mount.
+ * 2. useEffect with [transactions]: runs whenever transactions change to persist data into LocalStorage.
+ * 3. Props: passes data down to pages and receives user actions via callbacks.
+ * 4. Immutable state updates: using setTransactions((prev) => [...prev, newTx])
+ *    and setTransactions((prev) => prev.filter(...)) instead of directly mutating state arrays.
  */
 export default function App() {
   // Mobile sidebar drawer open/closed state
@@ -28,31 +32,19 @@ export default function App() {
   // Add Transaction modal open/closed state
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Store all transaction objects in React state.
-  // When this state changes, React updates the UI automatically.
-  const [transactions, setTransactions] = useState([]);
+  // Store all transactions in React state.
+  // We use a function inside useState so getTransactions() runs once on initial mount.
+  const [transactions, setTransactions] = useState(() => getTransactions());
 
   // ========================================================
   // LOCALSTORAGE PERSISTENCE LIFECYCLE
   // ========================================================
 
-  // Load previously saved transactions when the component first loads.
-  // The empty dependency array [] tells React to run this effect
-  // only once when the App component initially mounts.
-  useEffect(() => {
-    const savedTransactions = getTransactions();
-    // oxlint-disable-next-line react/set-state-in-effect
-    setTransactions(savedTransactions);
-  }, []);
-
-  // Save the latest transactions whenever the transaction state changes.
+  // Save transactions to LocalStorage whenever the transaction state changes.
   // The [transactions] dependency array tells React to run this effect
   // whenever a new transaction is added or an existing one is deleted.
   useEffect(() => {
-    // Only save once the initial load has populated or set transactions
-    if (transactions.length > 0 || localStorage.getItem('smartspend_transactions') !== null) {
-      saveTransactions(transactions);
-    }
+    saveTransactions(transactions);
   }, [transactions]);
 
   // Keyboard accessibility: dismiss mobile sidebar if Escape key is pressed
@@ -78,7 +70,10 @@ export default function App() {
    * @param {Object} newTransaction - Transaction object from form
    */
   const handleAddTransaction = (newTransaction) => {
-    setTransactions((prev) => [newTransaction, ...prev]);
+    const normalized = normalizeTransaction(newTransaction);
+    if (normalized) {
+      setTransactions((prev) => [normalized, ...prev]);
+    }
   };
 
   /**
@@ -89,7 +84,7 @@ export default function App() {
    */
   const handleDeleteTransaction = (id) => {
     setTransactions((prev) =>
-      prev.filter((transaction) => transaction.id !== id)
+      prev.filter((transaction) => transaction && transaction.id !== id)
     );
   };
 
