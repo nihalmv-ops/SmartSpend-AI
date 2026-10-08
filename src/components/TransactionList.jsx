@@ -1,3 +1,5 @@
+// SmartSpend AI - TransactionList Component
+
 import React from 'react';
 import {
   ArrowDownLeft,
@@ -9,10 +11,6 @@ import {
 } from 'lucide-react';
 import { formatDisplayDate } from '../utils/storage';
 
-/**
- * Helper to safely format amounts with Indian locale formatting (₹)
- * Handles numbers, strings, and undefined/null values defensively to prevent runtime errors.
- */
 const formatAmount = (amount) => {
   const num =
     typeof amount === 'number'
@@ -21,30 +19,12 @@ const formatAmount = (amount) => {
   return Math.abs(num).toLocaleString('en-IN');
 };
 
-/**
- * TransactionList Component
- * 
- * Displays transactions in a responsive desktop table and mobile card layout.
- * 
- * Beginner React Concepts:
- * - props: transactions, totalCount, onDelete, and onOpenAddModal passed from parent.
- * - Array.prototype.map(): transforms an array of transaction objects into JSX elements.
- * - key prop: React needs unique keys (e.g. key={transaction.id}) to identify which items
- *   have changed, been added, or removed, optimizing DOM updates.
- * - Conditional rendering: showing empty states when transactions count is 0.
- *
- * @param {Array} transactions - The filtered transactions array to display
- * @param {number} totalCount - Total number of stored transactions before filtering
- * @param {Function} onDelete - Callback invoked with transaction ID when delete is clicked
- * @param {Function} [onOpenAddModal] - Callback to open the Add Transaction modal
- */
 export default function TransactionList({
   transactions = [],
   totalCount = 0,
   onDelete,
   onOpenAddModal,
 }) {
-  // Empty State 1: User has no transactions in the database at all
   if (totalCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -71,7 +51,6 @@ export default function TransactionList({
     );
   }
 
-  // Empty State 2: Filters or search query returned 0 matches
   if (!transactions || transactions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
@@ -90,9 +69,6 @@ export default function TransactionList({
 
   return (
     <>
-      {/* ========================================================
-          DESKTOP TABLE VIEW (Shown on screens md and wider)
-          ======================================================== */}
       <div className="hidden md:block">
         <table className="w-full text-left text-sm text-slate-600">
           <thead className="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -118,10 +94,6 @@ export default function TransactionList({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {/* 
-              map() iterates over transactions array and returns a <tr> element for each item.
-              key={transaction.id} gives React a unique identifier for performance.
-            */}
             {transactions.map((transaction) => {
               if (!transaction) return null;
               const isIncome = transaction.type === 'income';
@@ -135,7 +107,6 @@ export default function TransactionList({
                   key={transaction.id}
                   className="transition-colors hover:bg-slate-50/70 group"
                 >
-                  {/* Description & optional notes */}
                   <td className="px-6 py-4">
                     <div className="font-semibold text-slate-900">
                       {description}
@@ -147,19 +118,16 @@ export default function TransactionList({
                     )}
                   </td>
 
-                  {/* Category badge */}
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                       {transaction.category || 'Other'}
                     </span>
                   </td>
 
-                  {/* Formatted Date */}
                   <td className="px-6 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">
                     {displayDate}
                   </td>
 
-                  {/* Transaction Type badge */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1 text-xs font-semibold ${
@@ -175,7 +143,6 @@ export default function TransactionList({
                     </span>
                   </td>
 
-                  {/* Dynamic Amount with + or - prefix */}
                   <td className="px-6 py-4 text-right whitespace-nowrap">
                     <span
                       className={`text-sm font-bold tracking-tight ${
@@ -186,7 +153,6 @@ export default function TransactionList({
                     </span>
                   </td>
 
-                  {/* Delete Transaction action button */}
                   <td className="px-6 py-4 text-right whitespace-nowrap">
                     <button
                       type="button"
@@ -205,10 +171,6 @@ export default function TransactionList({
         </table>
       </div>
 
-      {/* ========================================================
-          MOBILE CARD VIEW (Shown on screens smaller than md)
-          Eliminates horizontal scrolling on mobile viewports.
-          ======================================================== */}
       <div className="divide-y divide-slate-100 md:hidden">
         {transactions.map((transaction) => {
           if (!transaction) return null;
@@ -224,7 +186,6 @@ export default function TransactionList({
               className="flex flex-col gap-2 p-4 transition-colors hover:bg-slate-50/50"
             >
               <div className="flex items-start justify-between gap-3">
-                {/* Left: Description, Date, and Category */}
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
                     {description}
@@ -238,7 +199,6 @@ export default function TransactionList({
                   </div>
                 </div>
 
-                {/* Right: Amount, Type, and Delete Button */}
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <div
@@ -257,7 +217,6 @@ export default function TransactionList({
                     </span>
                   </div>
 
-                  {/* Accessible Mobile Delete button */}
                   <button
                     type="button"
                     onClick={() => onDelete && onDelete(transaction.id)}
@@ -269,7 +228,6 @@ export default function TransactionList({
                 </div>
               </div>
 
-              {/* Optional notes */}
               {transaction.notes && (
                 <p className="text-xs text-slate-400 font-normal">
                   {transaction.notes}
@@ -282,3 +240,4 @@ export default function TransactionList({
     </>
   );
 }
+

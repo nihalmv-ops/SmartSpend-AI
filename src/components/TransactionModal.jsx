@@ -1,15 +1,11 @@
+// SmartSpend AI - TransactionModal Component
+
 import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { CATEGORIES } from '../data/categories';
 
-/**
- * Returns today's date formatted as YYYY-MM-DD for standard HTML date input.
- */
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
-/**
- * Initial empty form state helper.
- */
 const getInitialFormState = () => ({
   type: 'expense',
   description: '',
@@ -19,34 +15,38 @@ const getInitialFormState = () => ({
   notes: '',
 });
 
-/**
- * TransactionModal Component
- * 
- * Demonstrates:
- * - Controlled inputs: React state acts as the "single source of truth" for each form input.
- * - e.preventDefault(): stops native browser form submission and page reload.
- * - Form validation: verifies that required fields are properly filled before saving.
- * - Props: receives isOpen, onClose, and onAddTransaction callback from App.
- *
- * @param {boolean} isOpen - Whether the modal dialog is open
- * @param {Function} onClose - Callback to close the modal
- * @param {Function} onAddTransaction - Callback to pass the new transaction back to App
- */
 export default function TransactionModal({
   isOpen,
   onClose,
   onAddTransaction,
+  categories = [],
+  onAddCategory,
 }) {
-  // State for all form fields
   const [formData, setFormData] = useState(getInitialFormState);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Close modal when Escape key is pressed
+  const activeCategories =
+    categories && categories.length > 0 ? categories : CATEGORIES;
+
+  const handleClose = () => {
+    setFormData(getInitialFormState());
+    setIsCustomCategory(false);
+    setCustomCategoryName('');
+    setErrorMessage('');
+    onClose();
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        setFormData(getInitialFormState());
+        setIsCustomCategory(false);
+        setCustomCategoryName('');
+        setErrorMessage('');
         onClose();
       }
     };
@@ -55,49 +55,69 @@ export default function TransactionModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // If modal is not open, return null to render nothing
   if (!isOpen) return null;
 
-  /**
-   * Handle form submission.
-   * e.preventDefault() prevents default browser form submission that would reload the page.
-   */
+  const handleCategorySelect = (e) => {
+    const value = e.target.value;
+    if (value === '__custom__') {
+      setIsCustomCategory(true);
+      setFormData((prev) => ({ ...prev, category: '__custom__' }));
+    } else {
+      setIsCustomCategory(false);
+      setFormData((prev) => ({ ...prev, category: value }));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate description
     if (!formData.description.trim()) {
       setErrorMessage('Please enter a transaction description.');
       return;
     }
 
-    // Validate amount
     const parsedAmount = Number(formData.amount);
     if (!formData.amount || isNaN(parsedAmount) || parsedAmount <= 0) {
       setErrorMessage('Please enter a valid positive amount.');
       return;
     }
 
-    // Create safe transaction object
+    let finalCategory = formData.category;
+    if (isCustomCategory || formData.category === '__custom__') {
+      const trimmedCustom = customCategoryName.trim();
+      if (!trimmedCustom) {
+        setErrorMessage('Please enter a custom category name.');
+        return;
+      }
+      finalCategory = trimmedCustom;
+      if (onAddCategory) {
+        onAddCategory({
+          id: trimmedCustom.toLowerCase().replace(/\s+/g, '-'),
+          name: trimmedCustom,
+          icon: 'Tag',
+          type: formData.type,
+          color: 'indigo',
+          hex: '#6366f1',
+          isCustom: true,
+        });
+      }
+    }
+
     const newTx = {
-      id: Date.now(), // Date.now() provides a simple unique ID
+      id: Date.now(),
       type: formData.type,
       description: formData.description.trim(),
       amount: parsedAmount,
-      category: formData.category,
+      category: finalCategory,
       date: formData.date || getTodayDate(),
       notes: formData.notes.trim(),
     };
 
-    // Pass new transaction up to parent App component via callback prop
     if (onAddTransaction) {
       onAddTransaction(newTx);
     }
 
-    // Reset form fields and close modal
-    setFormData(getInitialFormState());
-    setErrorMessage('');
-    onClose();
+    handleClose();
   };
 
   return (
@@ -107,16 +127,13 @@ export default function TransactionModal({
       aria-modal="true"
       aria-labelledby="transaction-modal-title"
     >
-      {/* Backdrop Overlay */}
       <div
         className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
-      {/* Modal Dialog Window */}
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/10 z-10 animate-in fade-in zoom-in-95 duration-150">
-        {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -131,7 +148,7 @@ export default function TransactionModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Close modal"
           >
@@ -139,16 +156,13 @@ export default function TransactionModal({
           </button>
         </div>
 
-        {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Error Message Alert */}
           {errorMessage && (
             <div className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-700">
               {errorMessage}
             </div>
           )}
 
-          {/* Transaction Type Segment Switch */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
               Transaction Type
@@ -182,7 +196,6 @@ export default function TransactionModal({
             </div>
           </div>
 
-          {/* Description Input */}
           <div>
             <label
               htmlFor="tx-description"
@@ -203,9 +216,7 @@ export default function TransactionModal({
             />
           </div>
 
-          {/* Amount & Date Grid */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Amount Input */}
             <div>
               <label
                 htmlFor="tx-amount"
@@ -233,7 +244,6 @@ export default function TransactionModal({
               </div>
             </div>
 
-            {/* Date Input */}
             <div>
               <label
                 htmlFor="tx-date"
@@ -253,7 +263,6 @@ export default function TransactionModal({
             </div>
           </div>
 
-          {/* Category Dropdown */}
           <div>
             <label
               htmlFor="tx-category"
@@ -264,20 +273,38 @@ export default function TransactionModal({
             <select
               id="tx-category"
               value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
+              onChange={handleCategorySelect}
               className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm font-medium text-slate-800 transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
-              {CATEGORIES.map((cat) => (
-                <option key={cat.id} value={cat.name}>
+              {activeCategories.map((cat) => (
+                <option key={cat.id || cat.name} value={cat.name}>
                   {cat.name}
                 </option>
               ))}
+              <option value="__custom__">+ Add Custom Category</option>
             </select>
           </div>
 
-          {/* Notes Input */}
+          {isCustomCategory && (
+            <div>
+              <label
+                htmlFor="tx-custom-category"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5"
+              >
+                Custom Category Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="tx-custom-category"
+                type="text"
+                required
+                placeholder="e.g. Freelance, Subscriptions, Investment"
+                value={customCategoryName}
+                onChange={(e) => setCustomCategoryName(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+          )}
+
           <div>
             <label
               htmlFor="tx-notes"
@@ -297,11 +324,10 @@ export default function TransactionModal({
             />
           </div>
 
-          {/* Modal Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
             >
               Cancel
@@ -318,3 +344,4 @@ export default function TransactionModal({
     </div>
   );
 }
+

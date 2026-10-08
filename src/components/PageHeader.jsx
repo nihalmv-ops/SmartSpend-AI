@@ -1,3 +1,5 @@
+// SmartSpend AI - PageHeader Component
+
 import React from 'react';
 
 export default function PageHeader({

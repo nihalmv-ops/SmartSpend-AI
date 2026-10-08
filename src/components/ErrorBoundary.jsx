@@ -1,39 +1,28 @@
+// SmartSpend AI - ErrorBoundary Component
+
 import React from 'react';
 import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
 
-/**
- * ErrorBoundary Component
- * 
- * Catches JavaScript errors anywhere in its child component tree,
- * logs the errors, and displays a friendly fallback UI instead of crashing
- * to a blank white screen.
- * 
- * In React, an uncaught error in any component unmounts the entire app.
- * Using an Error Boundary prevents the "white screen of death" and lets
- * the user recover easily.
- */
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    // State to track whether an error has been caught
     this.state = { hasError: false, error: null };
   }
 
-  // Update state so the next render shows the fallback UI
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
 
-  // Log error details for debugging
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught a runtime error:', error, errorInfo);
   }
 
-  // Reset corrupted LocalStorage data and reload the application
   handleResetData = () => {
     try {
       localStorage.removeItem('smartspend_transactions');
       localStorage.removeItem('smartspend_budget');
+      localStorage.removeItem('smartspend_categories');
+      localStorage.removeItem('smartspend_user');
       localStorage.removeItem('smartspend_settings');
     } catch (e) {
       console.warn('Could not clear localStorage:', e);
@@ -91,3 +80,4 @@ export default class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+

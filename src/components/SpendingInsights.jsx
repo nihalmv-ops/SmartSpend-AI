@@ -1,3 +1,5 @@
+// SmartSpend AI - SpendingInsights Component
+
 import React from 'react';
 import {
   Sparkles,
@@ -11,23 +13,6 @@ import {
   Info,
 } from 'lucide-react';
 
-/**
- * SpendingInsights Component
- * 
- * Demonstrates:
- * - props: Passing calculated data from parent components (Dashboard, Analytics)
- *   down to child components so logic is calculated once and reused cleanly.
- * - Rule-based decision logic: Evaluates multiple spending thresholds using standard
- *   JavaScript conditionals (if / else if) rather than third-party AI APIs.
- * - Array mapping with keys: Iterates through generated insight objects to render cards.
- *
- * @param {number} totalExpenses - Total spending amount in Rupees
- * @param {number} totalIncome - Total income amount in Rupees
- * @param {number} budget - Monthly budget target in Rupees
- * @param {number|string} savingsRate - Calculated savings rate percentage
- * @param {string} topCategory - Name of highest expense category
- * @param {number} [topCategoryAmount] - Spending amount in top category
- */
 export default function SpendingInsights({
   totalExpenses = 0,
   totalIncome = 0,
@@ -36,18 +21,13 @@ export default function SpendingInsights({
   topCategory = 'None',
   topCategoryAmount = 0,
 }) {
-  // Numeric parsing for safe threshold comparisons
   const expensesNum = Number(totalExpenses) || 0;
   const incomeNum = Number(totalIncome) || 0;
   const budgetNum = Number(budget) || 30000;
   const savingsRateNum = parseFloat(String(savingsRate)) || 0;
 
-  // ========================================================
-  // RULE-BASED INSIGHT GENERATION ENGINE
-  // ========================================================
   const insights = [];
 
-  // Insight 1: Top Category Spending Rule
   if (topCategory && topCategory !== 'None' && topCategoryAmount > 0) {
     insights.push({
       id: 'top-category',
@@ -60,7 +40,6 @@ export default function SpendingInsights({
     });
   }
 
-  // Insight 2: Budget Health Rule
   if (budgetNum > 0) {
     if (expensesNum > budgetNum) {
       const overAmount = expensesNum - budgetNum;
@@ -108,7 +87,6 @@ export default function SpendingInsights({
     }
   }
 
-  // Insight 3: Savings Rate & Retained Income Rule
   if (incomeNum > 0) {
     if (savingsRateNum >= 20) {
       insights.push({
@@ -143,7 +121,6 @@ export default function SpendingInsights({
     }
   }
 
-  // If no transactions have been added yet
   if (insights.length === 0) {
     insights.push({
       id: 'no-data',
@@ -156,7 +133,6 @@ export default function SpendingInsights({
     });
   }
 
-  // Color mapping helper for Tailwind classes
   const getColorClasses = (color) => {
     switch (color) {
       case 'rose':
@@ -213,7 +189,6 @@ export default function SpendingInsights({
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-      {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
         <div>
           <div className="flex items-center gap-2">
@@ -229,7 +204,6 @@ export default function SpendingInsights({
         </div>
       </div>
 
-      {/* Insight Cards Grid */}
       <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {insights.map((item) => {
           const Icon = item.icon;
@@ -267,3 +241,4 @@ export default function SpendingInsights({
     </div>
   );
 }
+

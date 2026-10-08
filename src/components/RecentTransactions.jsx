@@ -1,7 +1,8 @@
+// SmartSpend AI - RecentTransactions Component
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownLeft, ChevronRight, Inbox, Plus } from 'lucide-react';
-import { formatDisplayDate } from '../utils/storage';
 
 const formatAmount = (amount) => {
   const num =
@@ -11,32 +12,11 @@ const formatAmount = (amount) => {
   return Math.abs(num).toLocaleString('en-IN');
 };
 
-/**
- * RecentTransactions Component
- * 
- * Demonstrates:
- * - Array.prototype.sort(): Orders transactions chronologically (latest first).
- * - Array.prototype.slice(0, 5): Limits display to the top 5 most recent transactions.
- * - Defensive formatting: Normalizes titles, categories, emojis, and currency.
- *
- * @param {Array} transactions - Active transactions from App state
- * @param {Function} [onOpenAddModal] - Callback to open Add Transaction modal
- */
 export default function RecentTransactions({ transactions = [], onOpenAddModal }) {
-  // Sort copy of transactions by ID / date descending so newest appears first
-  const sortedTransactions = [...(transactions || [])].sort((a, b) => {
-    // If raw date or id is available, use for ordering
-    if (a.rawDate && b.rawDate) {
-      return new Date(b.rawDate) - new Date(a.rawDate);
-    }
-    return (b.id || 0) - (a.id || 0);
-  });
-
-  const displayItems = sortedTransactions.slice(0, 5);
+  const displayItems = (transactions || []).slice(0, 5);
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-      {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-900">Recent Transactions</h2>
@@ -52,7 +32,6 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
         </Link>
       </div>
 
-      {/* Empty State when no transactions exist */}
       {displayItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-3">
@@ -76,17 +55,16 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
           )}
         </div>
       ) : (
-        /* Transaction List */
         <div className="divide-y divide-slate-100">
           {displayItems.map((tx) => {
             if (!tx) return null;
             const isIncome = tx.type === 'income';
             const title = tx.description || tx.title || 'Untitled Transaction';
-            const date = formatDisplayDate(tx.date);
+            const date = tx.date || 'Today';
             const category = tx.category || 'General';
-            const subtitle = `${date} · ${category}`;
+            const subtitle = tx.subtitle || `${date} · ${category}`;
             const emoji =
-              tx.emoji || tx.iconEmoji || (isIncome ? '💼' : '💳');
+              tx.emoji || tx.iconEmoji || (isIncome ? '💰' : '💳');
             const badgeBg =
               tx.badgeBg ||
               (isIncome
@@ -99,7 +77,6 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
                 key={tx.id}
                 className="group flex items-center justify-between py-3.5 transition-colors first:pt-4 last:pb-1"
               >
-                {/* Left Details */}
                 <div className="flex items-center gap-3.5">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${badgeBg} shadow-2xs`}
@@ -117,7 +94,6 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
                   </div>
                 </div>
 
-                {/* Right Amount */}
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-sm font-semibold ${
@@ -149,3 +125,4 @@ export default function RecentTransactions({ transactions = [], onOpenAddModal }
     </div>
   );
 }
+

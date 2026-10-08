@@ -1,5 +1,7 @@
+// SmartSpend AI - App Component
+
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import TransactionModal from './components/TransactionModal';
@@ -8,46 +10,38 @@ import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
 import Budget from './pages/Budget';
 import Reports from './pages/Reports';
+import Login from './pages/Login';
 import {
   getTransactions,
   saveTransactions,
   normalizeTransaction,
-  getBudget,
-  saveBudget,
+  getCategories,
+  saveCategories,
+  getUser,
+  saveUser,
+  removeUser,
 } from './utils/storage';
 
-
 export default function App() {
-  // Mobile sidebar drawer open/closed state
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Add Transaction modal open/closed state
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Store all transactions in React state.
-  // We use a function inside useState so getTransactions() runs once on initial mount.
   const [transactions, setTransactions] = useState(() => getTransactions());
+  const [categories, setCategories] = useState(() => getCategories());
+  const [user, setUser] = useState(() => getUser());
 
-  // Store monthly target budget in React state, initialized from LocalStorage
-  const [budget, setBudget] = useState(() => getBudget());
-
-
-  // LOCALSTORAGE PERSISTENCE LIFECYCLE
-
-
-  // Save transactions to LocalStorage whenever the transaction state changes.
-  // The [transactions] dependency array tells React to run this effect
-  // whenever a new transaction is added or an existing one is deleted.
   useEffect(() => {
     saveTransactions(transactions);
   }, [transactions]);
 
-  // Save budget to LocalStorage whenever the budget state changes.
   useEffect(() => {
-    saveBudget(budget);
-  }, [budget]);
+    saveCategories(categories);
+  }, [categories]);
 
-  // Keyboard accessibility: dismiss mobile sidebar if Escape key is pressed
+  useEffect(() => {
+    saveUser(user);
+  }, [user]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && sidebarOpen) {
@@ -58,11 +52,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sidebarOpen]);
 
-  // ========================================================
-  // TRANSACTION ACTION HANDLERS
-  // ========================================================
-
- 
   const handleAddTransaction = (newTransaction) => {
     const normalized = normalizeTransaction(newTransaction);
     if (normalized) {
@@ -70,111 +59,97 @@ export default function App() {
     }
   };
 
-  /**
-   * Delete a transaction by its unique ID.
-   * filter() creates a new array without the transaction being deleted.
-   *
-   * @param {number|string} id - The unique ID of the transaction to delete
-   */
   const handleDeleteTransaction = (id) => {
     setTransactions((prev) =>
       prev.filter((transaction) => transaction && transaction.id !== id)
     );
   };
 
-  /**
-   * Update the monthly target budget.
-   *
-   * @param {number|string} newBudget - Target budget amount in Rupees
-   */
-  const handleUpdateBudget = (newBudget) => {
-    const num = Number(newBudget);
-    if (!isNaN(num) && num > 0) {
-      setBudget(num);
-    }
+  const handleAddCategory = (newCategory) => {
+    if (!newCategory || !newCategory.name) return;
+    setCategories((prev) => {
+      const exists = prev.some(
+        (c) => c.name.toLowerCase() === newCategory.name.toLowerCase()
+      );
+      if (exists) return prev;
+      return [...prev, newCategory];
+    });
   };
+
+  const handleLogin = (authenticatedUser) => {
+    setUser(authenticatedUser);
+    saveUser(authenticatedUser);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    removeUser();
+  };
+
+  if (location.pathname === '/login') {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 antialiased">
-      {/* Sidebar Navigation (Persistent on desktop, drawer on mobile) */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Main Content Layout Container */}
       <div className="flex flex-1 flex-col min-w-0 overflow-x-hidden">
-        {/* Top Header with search, quick add, notifications & profile */}
         <Header
           onMenuClick={() => setSidebarOpen((prev) => !prev)}
           onOpenAddModal={() => setIsModalOpen(true)}
+          user={user}
+          onLogout={handleLogout}
         />
 
-        {/* Page Content Viewport */}
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
-            {/* React Router Views */}
             <Routes>
-              {/* Dashboard: Financial overview with dynamic KPIs and recent items */}
               <Route
                 path="/"
                 element={
                   <Dashboard
                     transactions={transactions}
-                    budget={budget}
                     onOpenAddModal={() => setIsModalOpen(true)}
                   />
                 }
               />
 
-              {/* Transactions: Filterable list with search, delete, and add modal */}
               <Route
                 path="/transactions"
                 element={
                   <Transactions
                     transactions={transactions}
+                    categories={categories}
                     onOpenAddModal={() => setIsModalOpen(true)}
                     onDeleteTransaction={handleDeleteTransaction}
                   />
                 }
               />
 
-              {/* Analytics: Recharts spending visualizations & KPI metrics */}
               <Route
                 path="/analytics"
-                element={
-                  <Analytics
-                    transactions={transactions}
-                    budget={budget}
-                    onOpenAddModal={() => setIsModalOpen(true)}
-                  />
-                }
+                element={<Analytics transactions={transactions} />}
               />
 
-              {/* Budget: Spending limits dynamically calculated against expenses */}
               <Route
                 path="/budget"
-                element={
-                  <Budget
-                    transactions={transactions}
-                    budget={budget}
-                    onUpdateBudget={handleUpdateBudget}
-                  />
-                }
+                element={<Budget transactions={transactions} />}
               />
 
-              {/* Reports: Financial statements & export UI with dynamic summary */}
               <Route
                 path="/reports"
-                element={
-                  <Reports
-                    transactions={transactions}
-                    budget={budget}
-                  />
-                }
+                element={<Reports transactions={transactions} />}
               />
 
-              {/* Settings placeholder route */}
               <Route
                 path="/settings"
                 element={
@@ -187,18 +162,19 @@ export default function App() {
                 }
               />
 
-              {/* Fallback route */}
+              <Route path="/login" element={<Login onLogin={handleLogin} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </main>
       </div>
 
-      {/* Global Add Transaction Modal Form */}
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddTransaction={handleAddTransaction}
+        categories={categories}
+        onAddCategory={handleAddCategory}
       />
     </div>
   );

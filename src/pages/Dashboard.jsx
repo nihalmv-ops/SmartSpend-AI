@@ -1,3 +1,5 @@
+// SmartSpend AI - Dashboard Page
+
 import React, { useState } from 'react';
 import {
   TrendingUp,
@@ -23,9 +25,6 @@ import BudgetCard from '../components/BudgetCard';
 import RecentTransactions from '../components/RecentTransactions';
 import SpendingInsights from '../components/SpendingInsights';
 
-/**
- * Custom Tooltip for Dashboard Spending Overview Chart
- */
 const CustomOverviewTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const value = Number(payload[0].value || 0).toLocaleString('en-IN');
@@ -39,19 +38,6 @@ const CustomOverviewTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-/**
- * Dashboard Page Component
- * 
- * Demonstrates:
- * - Array.prototype.filter() & reduce(): dynamically computes income, expenses, and balance.
- * - Dynamic data flow: passes live calculated metrics to SummaryCard and BudgetCard.
- * - Responsive Recharts BarChart: visualizes real weekly spending patterns.
- * - SpendingInsights integration: displays smart rule-based guidance on the overview screen.
- *
- * @param {Array} transactions - Active transactions array from App state
- * @param {number} budget - Monthly budget from App state
- * @param {Function} onOpenAddModal - Callback to trigger the Add Transaction modal
- */
 export default function Dashboard({
   transactions = [],
   budget = 30000,
@@ -59,16 +45,10 @@ export default function Dashboard({
 }) {
   const [timeframe, setTimeframe] = useState('Monthly');
 
-  // ========================================================
-  // DYNAMIC FINANCIAL CALCULATIONS
-  // ========================================================
-
-  // 1. Calculate total income using reduce()
   const totalIncome = (transactions || [])
     .filter((tx) => tx && tx.type === 'income')
     .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
-  // 2. Calculate total expenses using reduce()
   const expenseTransactions = (transactions || []).filter(
     (tx) => tx && tx.type === 'expense'
   );
@@ -78,23 +58,19 @@ export default function Dashboard({
     0
   );
 
-  // 3. Current balance = Total Income - Total Expenses
   const currentBalance = totalIncome - totalExpenses;
 
-  // 4. Budget calculations
   const budgetNum = Number(budget) || 30000;
   const remainingBudget = budgetNum - totalExpenses;
   const isOverBudget = remainingBudget < 0;
   const budgetPercentage =
     budgetNum > 0 ? Math.round((totalExpenses / budgetNum) * 100) : 0;
 
-  // Savings rate calculation
   const savingsRate =
     totalIncome > 0
       ? Math.max(0, ((totalIncome - totalExpenses) / totalIncome) * 100).toFixed(1)
       : '0.0';
 
-  // Category breakdown for insights
   const categoryTotals = expenseTransactions.reduce((acc, tx) => {
     const cat = tx.category || 'Other';
     acc[cat] = (acc[cat] || 0) + (Number(tx.amount) || 0);
@@ -107,7 +83,6 @@ export default function Dashboard({
   const topCategory = categoryEntries.length > 0 ? categoryEntries[0][0] : 'None';
   const topCategoryAmount = categoryEntries.length > 0 ? categoryEntries[0][1] : 0;
 
-  // Prepare weekly chart distribution
   const chartData = [
     { name: 'Week 1', spending: 0 },
     { name: 'Week 2', spending: 0 },
@@ -135,7 +110,6 @@ export default function Dashboard({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Dashboard Page Header */}
       <PageHeader
         label="Financial Overview"
         title="Good morning 👋"
@@ -152,7 +126,6 @@ export default function Dashboard({
         </button>
       </PageHeader>
 
-      {/* 4 Dynamic Summary Cards Grid */}
       <section
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         aria-label="Key Financial Metrics"
@@ -191,14 +164,11 @@ export default function Dashboard({
         />
       </section>
 
-      {/* Main Insights Grid: Spending Overview (Recharts Chart) + Budget Card */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Spending Overview Panel (Spans 2 columns on desktop) */}
         <section
           className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs lg:col-span-2"
           aria-label="Spending Overview Chart"
         >
-          {/* Panel Header */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
             <div>
               <h2 className="text-base font-bold text-slate-900">
@@ -209,7 +179,6 @@ export default function Dashboard({
               </p>
             </div>
 
-            {/* Timeframe Select Dropdown */}
             <div className="flex items-center gap-2">
               <label htmlFor="timeframe-select" className="sr-only">
                 Select timeframe
@@ -231,7 +200,6 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* Recharts Spending BarChart Area */}
           <div className="mt-6 h-[260px] w-full">
             {expenseTransactions.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
@@ -279,7 +247,6 @@ export default function Dashboard({
           </div>
         </section>
 
-        {/* Dynamic Monthly Budget Card */}
         <section aria-label="Monthly Budget Progress">
           <BudgetCard
             spent={`₹${totalExpenses.toLocaleString('en-IN')}`}
@@ -295,7 +262,6 @@ export default function Dashboard({
         </section>
       </div>
 
-      {/* Automated Spending Insights Section */}
       <section aria-label="Smart Insights">
         <SpendingInsights
           totalExpenses={totalExpenses}
@@ -307,7 +273,6 @@ export default function Dashboard({
         />
       </section>
 
-      {/* Dynamic Recent Transactions List */}
       <section aria-label="Recent Transactions List">
         <RecentTransactions
           transactions={transactions}
@@ -317,3 +282,4 @@ export default function Dashboard({
     </div>
   );
 }
+

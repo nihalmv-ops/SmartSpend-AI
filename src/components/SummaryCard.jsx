@@ -1,3 +1,5 @@
+// SmartSpend AI - SummaryCard Component
+
 import React from 'react';
 
 const VARIANT_STYLES = {

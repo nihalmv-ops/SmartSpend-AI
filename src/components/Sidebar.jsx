@@ -1,3 +1,5 @@
+// SmartSpend AI - Sidebar Component
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
@@ -13,12 +15,36 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, path: '/', end: true },
-  { id: 'transactions', name: 'Transactions', icon: ArrowLeftRight, path: '/transactions' },
-  { id: 'analytics', name: 'Analytics', icon: BarChart3, path: '/analytics' },
-  { id: 'budget', name: 'Budget', icon: Target, path: '/budget' },
-  { id: 'reports', name: 'Reports', icon: FileText, path: '/reports' },
-  { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
+  { id: 'dashboard',
+     name: 'Dashboard',
+      icon: LayoutDashboard,
+       path: '/',
+        end: true },
+
+  { id: 'transactions',
+     name: 'Transactions',
+      icon: ArrowLeftRight, 
+      path: '/transactions' },
+
+  { id: 'analytics',
+     name: 'Analytics',
+      icon: BarChart3,
+       path: '/analytics' },
+
+  { id: 'budget',
+     name: 'Budget',
+      icon: Target,
+       path: '/budget' },
+
+  { id: 'reports',
+     name: 'Reports',
+      icon: FileText,
+       path: '/reports' },
+
+  { id: 'settings',
+     name: 'Settings',
+      icon: Settings,
+       path: '/settings' },
 ];
 
 export default function Sidebar({ isOpen = false, onClose }) {
@@ -30,7 +56,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
           role="presentation"
@@ -39,7 +64,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
         />
       )}
 
-      {/* Sidebar Container */}
       <aside
         className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col justify-between border-r border-slate-200/80 bg-white p-5 transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -47,7 +71,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
         aria-label="Main Navigation"
       >
         <div className="flex flex-col gap-6">
-          {/* Brand Header */}
           <div className="flex items-center justify-between">
             <NavLink
               to="/"
@@ -70,7 +93,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
               </div>
             </NavLink>
 
-            {/* Mobile Close Button */}
             <button
               type="button"
               onClick={onClose}
@@ -81,7 +103,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
             </button>
           </div>
 
-          {/* Navigation Links */}
           <nav className="flex flex-col gap-1.5" aria-label="Sidebar Sections">
             <span className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Menu
@@ -123,7 +144,6 @@ export default function Sidebar({ isOpen = false, onClose }) {
           </nav>
         </div>
 
-        {/* Bottom Card - Smart Insights */}
         <div className="rounded-2xl border border-purple-100 bg-purple-50/70 p-4">
           <div className="flex items-center gap-2 text-purple-900">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
@@ -138,7 +158,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center rounded-full bg-purple-200/60 px-2 py-0.5 text-[10px] font-medium text-purple-800">
-              Coming in Day 4
+              Coming Soon
             </span>
           </div>
         </div>
@@ -146,3 +166,4 @@ export default function Sidebar({ isOpen = false, onClose }) {
     </>
   );
 }
+

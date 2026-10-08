@@ -1,3 +1,5 @@
+// SmartSpend AI - Reports Page
+
 import React, { useState } from 'react';
 import {
   FileText,
@@ -11,21 +13,10 @@ import {
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
-/**
- * Reports Page Component
- * 
- * Demonstrates:
- * - Dynamic aggregation of financial statements with Array.prototype.reduce().
- * - Safe numeric parsing and Indian currency formatting (en-IN).
- * - UI feedback notifications for export actions.
- *
- * @param {Array} transactions - Active transactions array from App state
- */
 export default function Reports({ transactions = [] }) {
   const [period, setPeriod] = useState('Monthly');
   const [exportNotice, setExportNotice] = useState(null);
 
-  // Dynamic calculations from transactions using reduce()
   const totalIncome = (transactions || [])
     .filter((t) => t && t.type === 'income')
     .reduce((sum, t) => {
@@ -61,7 +52,6 @@ export default function Reports({ transactions = [] }) {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Page Header with Export Action Buttons */}
       <PageHeader
         label="Financial Statements"
         title="REPORTS"
@@ -90,7 +80,6 @@ export default function Reports({ transactions = [] }) {
         </div>
       </PageHeader>
 
-      {/* Export Feedback Banner */}
       {exportNotice && (
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/80 p-3.5 text-xs font-medium text-indigo-900 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -103,7 +92,6 @@ export default function Reports({ transactions = [] }) {
         </div>
       )}
 
-      {/* Period Selector Bar */}
       <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-slate-400" />
@@ -142,7 +130,6 @@ export default function Reports({ transactions = [] }) {
         </div>
       </div>
 
-      {/* Financial Statement Summary Cards */}
       <section
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         aria-label="Statement Metrics"
@@ -177,7 +164,6 @@ export default function Reports({ transactions = [] }) {
         />
       </section>
 
-      {/* Statement Preview Container */}
       <section
         className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs"
         aria-label="Statement Preview"
@@ -222,3 +208,4 @@ export default function Reports({ transactions = [] }) {
     </div>
   );
 }
+
