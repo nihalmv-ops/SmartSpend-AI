@@ -262,8 +262,9 @@ export default function Dashboard({
         </section>
       </div>
 
-      <section aria-label="Smart Insights">
+      <section aria-label="AI Spending Insights">
         <SpendingInsights
+          transactions={transactions}
           totalExpenses={totalExpenses}
           totalIncome={totalIncome}
           budget={budgetNum}

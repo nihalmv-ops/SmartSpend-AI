@@ -17,6 +17,8 @@ import {
   normalizeTransaction,
   getCategories,
   saveCategories,
+  getBudget,
+  saveBudget,
   getUser,
   saveUser,
   removeUser,
@@ -28,6 +30,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState(() => getTransactions());
   const [categories, setCategories] = useState(() => getCategories());
+  const [budget, setBudget] = useState(() => getBudget());
   const [user, setUser] = useState(() => getUser());
 
   useEffect(() => {
@@ -37,6 +40,10 @@ export default function App() {
   useEffect(() => {
     saveCategories(categories);
   }, [categories]);
+
+  useEffect(() => {
+    saveBudget(budget);
+  }, [budget]);
 
   useEffect(() => {
     saveUser(user);
@@ -118,6 +125,7 @@ export default function App() {
                 element={
                   <Dashboard
                     transactions={transactions}
+                    budget={budget}
                     onOpenAddModal={() => setIsModalOpen(true)}
                   />
                 }
@@ -142,7 +150,14 @@ export default function App() {
 
               <Route
                 path="/budget"
-                element={<Budget transactions={transactions} />}
+                element={
+                  <Budget
+                    key={budget}
+                    transactions={transactions}
+                    budget={budget}
+                    onSaveBudget={(newBudget) => setBudget(newBudget)}
+                  />
+                }
               />
 
               <Route

@@ -5,8 +5,12 @@ import { Target, CheckCircle2, AlertCircle, Save, Sparkles } from 'lucide-react'
 import PageHeader from '../components/PageHeader';
 import SummaryCard from '../components/SummaryCard';
 
-export default function Budget({ transactions = [] }) {
-  const [budgetAmount, setBudgetAmount] = useState('30000');
+export default function Budget({
+  transactions = [],
+  budget = 30000,
+  onSaveBudget,
+}) {
+  const [budgetAmount, setBudgetAmount] = useState(String(budget || 30000));
   const [savedNotification, setSavedNotification] = useState(false);
 
   const dynamicSpentAmount = (transactions || [])
@@ -28,6 +32,10 @@ export default function Budget({ transactions = [] }) {
 
   const handleSaveBudget = (e) => {
     e.preventDefault();
+    const num = Number(budgetAmount);
+    if (!isNaN(num) && num > 0 && onSaveBudget) {
+      onSaveBudget(num);
+    }
     setSavedNotification(true);
     setTimeout(() => {
       setSavedNotification(false);
